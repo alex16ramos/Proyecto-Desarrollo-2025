@@ -1,0 +1,185 @@
+<div class="experiences-container">
+  <div class="header-section">
+    <div>
+      <h1 class="page-title">Mis Experiencias de Viaje</h1>
+      <p class="page-subtitle">Gestiona y comparte tus anécdotas, fotos y valoraciones</p>
+    </div>
+    <button class="btn btn-primary create-btn" (click)="openModal()" id="btn-create-experience">
+      <i class="fas fa-plus"></i> Nueva Experiencia
+    </button>
+  </div>
+
+  <!-- Filters Bar -->
+  <div class="filters-bar mb-4" *ngIf="experiences.length > 0">
+    <div class="search-box">
+      <i class="fas fa-search search-icon"></i>
+      <input
+        type="text"
+        class="form-control search-input"
+        placeholder="Buscar en tus experiencias..."
+        [(ngModel)]="searchTerm"
+        (input)="filterExperiences()"
+        id="exp-search-input"
+      />
+    </div>
+    <div class="rating-filter-group">
+      <label for="rating-filter" class="filter-label">Calificación:</label>
+      <select
+        id="rating-filter"
+        class="form-select filter-select"
+        [(ngModel)]="ratingFilter"
+        (change)="filterExperiences()"
+      >
+        <option [ngValue]="0">Todas las estrellas</option>
+        <option [ngValue]="5">5 Estrellas ★★★★★</option>
+        <option [ngValue]="4">4 Estrellas ★★★★</option>
+        <option [ngValue]="3">3 Estrellas ★★★</option>
+        <option [ngValue]="2">2 Estrellas ★★</option>
+        <option [ngValue]="1">1 Estrella ★</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p>Cargando tus experiencias...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && filteredExperiences.length === 0" class="empty-state">
+    <i class="fas fa-journal-whills empty-icon"></i>
+    <h3>No se encontraron experiencias</h3>
+    <p>Comparte tus vivencias en los destinos que has visitado para inspirar a otros viajeros.</p>
+    <button class="btn btn-primary mt-3" (click)="openModal()" id="btn-empty-create-exp">
+      Registrar Nueva Experiencia
+    </button>
+  </div>
+
+  <!-- Experiences Grid -->
+  <div *ngIf="!isLoading && filteredExperiences.length > 0" class="experiences-grid">
+    <div *ngFor="let exp of filteredExperiences" class="experience-card" [id]="'exp-card-' + exp.id">
+      <div class="card-top">
+        <span class="dest-badge">
+          <i class="fas fa-map-pin"></i> {{ exp.destinationName || 'Destino' }}
+        </span>
+        <div class="rating-pill">
+          ★ {{ exp.rating }}/5
+        </div>
+      </div>
+
+      <h3 class="exp-title">{{ exp.title }}</h3>
+      <p class="exp-desc">{{ exp.description }}</p>
+
+      <div class="tips-box" *ngIf="exp.comments">
+        <i class="fas fa-lightbulb tip-icon"></i>
+        <span>{{ exp.comments }}</span>
+      </div>
+
+      <div class="card-footer">
+        <span class="exp-date">
+          <i class="far fa-calendar-alt"></i> {{ exp.dateExperienced | date:'mediumDate' }}
+        </span>
+        <div class="actions">
+          <button
+            class="btn btn-sm btn-outline-primary edit-btn me-2"
+            (click)="openEditModal(exp)"
+            title="Editar experiencia"
+            [id]="'btn-edit-exp-' + exp.id"
+          >
+            <i class="fas fa-edit"></i>
+          </button>
+          <button
+            class="btn btn-sm btn-outline-danger delete-btn"
+            (click)="deleteExperience(exp.id)"
+            title="Eliminar experiencia"
+            [id]="'btn-delete-exp-' + exp.id"
+          >
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create / Edit Experience Modal -->
+  <div *ngIf="showModal" class="modal-backdrop" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">{{ editingId ? 'Editar Experiencia de Viaje' : 'Registrar Nueva Experiencia' }}</h2>
+        <button class="close-btn" (click)="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group mb-3">
+          <label for="modal-exp-dest" class="form-label">Destino Visitado *</label>
+          <select id="modal-exp-dest" class="form-select" [(ngModel)]="newExperience.destinationId" required>
+            <option value="" disabled>Selecciona un destino</option>
+            <option *ngFor="let d of destinations" [value]="d.id">
+              {{ d.name }} ({{ d.city }}, {{ d.country }})
+            </option>
+          </select>
+        </div>
+        <div class="form-group mb-3">
+          <label for="modal-exp-title" class="form-label">Título *</label>
+          <input
+            id="modal-exp-title"
+            type="text"
+            class="form-control"
+            placeholder="Ej: Día inolvidable en las pasarelas"
+            [(ngModel)]="newExperience.title"
+            required
+          />
+        </div>
+        <div class="form-group mb-3">
+          <label for="modal-exp-desc" class="form-label">Relato / Descripción *</label>
+          <textarea
+            id="modal-exp-desc"
+            class="form-control"
+            rows="3"
+            placeholder="Cuéntanos los detalles de tu visita..."
+            [(ngModel)]="newExperience.description"
+            required
+          ></textarea>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="modal-exp-date" class="form-label">Fecha del Viaje *</label>
+            <input
+              id="modal-exp-date"
+              type="date"
+              class="form-control"
+              [(ngModel)]="newExperience.dateExperienced"
+              required
+            />
+          </div>
+          <div class="col-md-6">
+            <label for="modal-exp-rating" class="form-label">Calificación (1 a 5) *</label>
+            <select id="modal-exp-rating" class="form-select" [(ngModel)]="newExperience.rating">
+              <option [ngValue]="5">5 - Excelente</option>
+              <option [ngValue]="4">4 - Muy Bueno</option>
+              <option [ngValue]="3">3 - Bueno</option>
+              <option [ngValue]="2">2 - Regular</option>
+              <option [ngValue]="1">1 - Malo</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group mb-3">
+          <label for="modal-exp-comments" class="form-label">Consejos para Viajeros</label>
+          <input
+            id="modal-exp-comments"
+            type="text"
+            class="form-control"
+            placeholder="Ej: Reservar con anticipación en temporada alta"
+            [(ngModel)]="newExperience.comments"
+          />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button class="btn btn-primary" (click)="saveExperience()" id="btn-modal-save-exp">Guardar Experiencia</button>
+      </div>
+    </div>
+  </div>
+</div>
