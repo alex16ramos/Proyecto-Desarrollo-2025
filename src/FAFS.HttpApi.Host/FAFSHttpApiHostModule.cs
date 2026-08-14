@@ -39,6 +39,7 @@ using Volo.Abp.OpenIddict;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.Studio.Client.AspNetCore;
 using Volo.Abp.Security.Claims;
+using FAFS.Middleware;
 
 namespace FAFS;
 
@@ -295,6 +296,7 @@ public class FAFSHttpApiHostModule : AbpModule
         }
 
         app.UseRouting();
+        app.UseMiddleware<ApiUsageMiddleware>();
         app.MapAbpStaticAssets();
         app.UseAbpStudioLink();
         app.UseAbpSecurityHeaders();

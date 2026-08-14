@@ -9,5 +9,6 @@ namespace FAFS.Application.Contracts.Metrics
     {
         Task<ApiUsageMetricDto> RecordMetricAsync(CreateApiUsageMetricDto input);
         Task<PagedResultDto<ApiUsageMetricDto>> GetListAsync(GetApiUsageMetricsInput input);
+        Task<ApiUsageStatsDto> GetStatisticsAsync(DateTime? startDate = null, DateTime? endDate = null);
     }
 }

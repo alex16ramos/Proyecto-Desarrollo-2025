@@ -6,6 +6,7 @@ using FAFS.Application.Contracts.Destinations;
 using FAFS.Application.Contracts.Favorites;
 using FAFS.Destinations;
 using FAFS.Favorites;
+using FAFS.Notifications;
 using Microsoft.AspNetCore.Authorization;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Authorization;
@@ -19,13 +20,16 @@ namespace FAFS.Application.Favorites
     {
         private readonly IRepository<FavoriteDestination, Guid> _favoriteRepository;
         private readonly IRepository<Destination, Guid> _destinationRepository;
+        private readonly IRepository<AppNotification, Guid>? _notificationRepository;
 
         public FavoriteDestinationAppService(
             IRepository<FavoriteDestination, Guid> favoriteRepository,
-            IRepository<Destination, Guid> destinationRepository)
+            IRepository<Destination, Guid> destinationRepository,
+            IRepository<AppNotification, Guid>? notificationRepository = null)
         {
             _favoriteRepository = favoriteRepository;
             _destinationRepository = destinationRepository;
+            _notificationRepository = notificationRepository;
         }
 
         public async Task<bool> ToggleFavoriteAsync(Guid destinationId)
@@ -45,8 +49,24 @@ namespace FAFS.Application.Favorites
             }
             else
             {
+                var destination = await _destinationRepository.FindAsync(destinationId);
+                var destName = destination?.Name ?? "el destino";
+
                 var fav = new FavoriteDestination(GuidGenerator.Create(), userId, destinationId);
                 await _favoriteRepository.InsertAsync(fav, autoSave: true);
+
+                if (_notificationRepository != null)
+                {
+                    var notification = new AppNotification(
+                        GuidGenerator.Create(),
+                        userId,
+                        "Destino guardado en favoritos",
+                        $"Has guardado '{destName}' exitosamente en tu lista personal de favoritos.",
+                        "Favorite"
+                    );
+                    await _notificationRepository.InsertAsync(notification, autoSave: true);
+                }
+
                 return true; // Added to favorites
             }
         }

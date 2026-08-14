@@ -21,5 +21,7 @@ namespace FAFS.Destinations
         // Custom method for searching cities (external service)
         Task<CitySearchResultDto> SearchCitiesAsync(CitySearchRequestDto input);
         Task<List<DestinationDto>> GetPopularDestinationsAsync(int count = 6);
+        Task<List<DestinationEventDto>> GetEventsAsync(Guid destinationId);
+        Task<List<DestinationEventDto>> GetEventsByCityAsync(string cityName, string? countryCode = null);
     }
 }

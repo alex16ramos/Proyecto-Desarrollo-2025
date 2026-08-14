@@ -22,7 +22,7 @@
         [routerLink]="['/destinations', pop.id]"
       >
         <img
-          [src]="pop.photoUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=400&q=80'"
+          [src]="getImageUrl(pop)"
           [alt]="pop.name"
           class="pop-image"
         />
@@ -43,10 +43,11 @@
         type="text"
         class="form-control search-input"
         placeholder="Buscar por nombre, descripción o ciudad..."
-        [(ngModel)]="searchTerm"
-        (input)="filterDestinations()"
+        [ngModel]="searchTerm"
+        (input)="onSearchInput($any($event.target).value)"
         id="destination-search-input"
       />
+      <span *ngIf="isSearchingCities" class="spinner-border spinner-border-sm text-primary search-spinner"></span>
     </div>
 
     <div class="filter-controls">
@@ -79,6 +80,23 @@
     </div>
   </div>
 
+  <!-- GeoDB Suggestions Popup -->
+  <div *ngIf="citySuggestions.length > 0" class="suggestions-box mb-4">
+    <h4 class="suggestions-title"><i class="fas fa-globe-americas text-info me-2"></i>Sugerencias de Ciudades del Mundo (GeoDB API):</h4>
+    <div class="suggestions-list">
+      <div
+        *ngFor="let city of citySuggestions"
+        class="suggestion-item"
+        (click)="selectCitySuggestion(city)"
+      >
+        <div class="city-info">
+          <strong>{{ city.name }}</strong>, {{ city.country }} <span *ngIf="city.region">({{ city.region }})</span>
+        </div>
+        <button class="btn btn-sm btn-outline-primary"><i class="fas fa-plus"></i> Importar como Destino</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading State -->
   <div *ngIf="isLoading" class="loading-state">
     <div class="spinner-border text-primary" role="status">
@@ -104,7 +122,7 @@
     >
       <div class="card-image-wrap">
         <img
-          [src]="dest.photoUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80'"
+          [src]="getImageUrl(dest)"
           [alt]="dest.name"
           class="card-image"
           loading="lazy"

@@ -1,5 +1,6 @@
 using FAFS.Application.Contracts.Destinations;
 using FAFS.Favorites;
+using FAFS.Notifications;
 using FAFS.Permissions;
 using System;
 using System.Collections.Generic;
@@ -23,24 +24,30 @@ namespace FAFS.Destinations
      IDestinationAppService
     {
         private readonly ICitySearchService _citySearchService;
+        private readonly ITicketmasterService? _ticketmasterService;
         private readonly IRepository<DestinationRating, Guid>? _ratingRepository;
         private readonly IRepository<FavoriteDestination, Guid>? _favoriteRepository;
+        private readonly IRepository<AppNotification, Guid>? _notificationRepository;
 
         public DestinationAppService(
             IRepository<Destination, Guid> repository,
             ICitySearchService citySearchService,
             IAbpLazyServiceProvider? lazyServiceProvider = null,
+            ITicketmasterService? ticketmasterService = null,
             IRepository<DestinationRating, Guid>? ratingRepository = null,
-            IRepository<FavoriteDestination, Guid>? favoriteRepository = null)
+            IRepository<FavoriteDestination, Guid>? favoriteRepository = null,
+            IRepository<AppNotification, Guid>? notificationRepository = null)
             : base(repository)
         {
             _citySearchService = citySearchService;
+            _ticketmasterService = ticketmasterService;
             if (lazyServiceProvider != null)
             {
                 LazyServiceProvider = lazyServiceProvider;
             }
             _ratingRepository = ratingRepository;
             _favoriteRepository = favoriteRepository;
+            _notificationRepository = notificationRepository;
 
             GetPolicyName = null;
             GetListPolicyName = null;
@@ -52,6 +59,27 @@ namespace FAFS.Destinations
         public async Task<CitySearchResultDto> SearchCitiesAsync(CitySearchRequestDto request)
         {
             return await _citySearchService.SearchCitiesAsync(request);
+        }
+
+        public async Task<List<DestinationEventDto>> GetEventsAsync(Guid destinationId)
+        {
+            var destination = await Repository.FindAsync(destinationId);
+            if (destination == null || string.IsNullOrWhiteSpace(destination.City) || _ticketmasterService == null)
+            {
+                return new List<DestinationEventDto>();
+            }
+
+            return await _ticketmasterService.GetEventsByCityAsync(destination.City, destination.Country);
+        }
+
+        public async Task<List<DestinationEventDto>> GetEventsByCityAsync(string cityName, string? countryCode = null)
+        {
+            if (string.IsNullOrWhiteSpace(cityName) || _ticketmasterService == null)
+            {
+                return new List<DestinationEventDto>();
+            }
+
+            return await _ticketmasterService.GetEventsByCityAsync(cityName, countryCode);
         }
 
         public override async Task<DestinationDto> GetAsync(Guid id)
@@ -69,6 +97,36 @@ namespace FAFS.Destinations
                 await EnrichDestinationDtoAsync(item);
             }
             return result;
+        }
+
+        public override async Task<DestinationDto> UpdateAsync(Guid id, CreateUpdateDestinationDto input)
+        {
+            var existing = await Repository.GetAsync(id);
+            var isSignificantChange = !string.Equals(existing.Name, input.Name, StringComparison.OrdinalIgnoreCase) ||
+                                      !string.Equals(existing.City, input.City, StringComparison.OrdinalIgnoreCase) ||
+                                      !string.Equals(existing.Country, input.Country, StringComparison.OrdinalIgnoreCase);
+
+            var updatedDto = await base.UpdateAsync(id, input);
+
+            // Si cambió el nombre o la ubicación, notificar automáticamente a los usuarios que lo guardaron en favoritos
+            if (isSignificantChange && _favoriteRepository != null && _notificationRepository != null)
+            {
+                var favoritedUsers = await _favoriteRepository.GetListAsync(f => f.DestinationId == id);
+                foreach (var fav in favoritedUsers)
+                {
+                    var notification = new AppNotification(
+                        GuidGenerator.Create(),
+                        fav.UserId,
+                        "Destino actualizado",
+                        $"El destino '{input.Name}' de tu lista de favoritos ha sido actualizado con nuevos datos.",
+                        "DestinationUpdate"
+                    );
+                    await _notificationRepository.InsertAsync(notification, autoSave: false);
+                }
+            }
+
+            await EnrichDestinationDtoAsync(updatedDto);
+            return updatedDto;
         }
 
         public async Task<List<DestinationDto>> GetPopularDestinationsAsync(int count = 6)

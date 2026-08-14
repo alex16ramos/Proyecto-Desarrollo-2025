@@ -21,7 +21,7 @@
   <div class="hero-header">
     <div class="hero-image-wrap">
       <img
-        [src]="destination.photoUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80'"
+        [src]="getImageUrl(destination)"
         [alt]="destination.name"
         class="hero-image"
       />
@@ -35,7 +35,7 @@
       <div class="hero-meta">
         <div class="rating-display">
           <i class="fas fa-star text-warning"></i>
-          <span class="score">{{ (ratingSummary?.averageScore || 0) | number:'1.1-1' }}</span>
+          <span class="score">{{ (ratingSummary?.averageRating || 0) | number:'1.1-1' }}</span>
           <span class="total">({{ ratingSummary?.totalRatings || 0 }} calificaciones)</span>
         </div>
         <span class="coords" *ngIf="destination.latitude && destination.longitude">
@@ -47,7 +47,7 @@
 
   <!-- Main Content Grid -->
   <div class="content-grid">
-    <!-- Left Column: Description, Ratings & Reviews -->
+    <!-- Left Column: Description, Wikipedia, Events, Ratings & Reviews -->
     <div class="main-column">
       <!-- Description Card -->
       <div class="content-card description-card">
@@ -57,14 +57,68 @@
         </p>
       </div>
 
+      <!-- Wikipedia Information Section (Integración con Sanitización Regex) -->
+      <div class="content-card wiki-card" *ngIf="wikiSummary">
+        <div class="wiki-header">
+          <div class="wiki-badge"><i class="fab fa-wikipedia-w"></i> Resumen Turístico e Histórico (Wikipedia)</div>
+          <a [href]="wikiSummary.pageUrl" target="_blank" rel="noopener noreferrer" class="wiki-link">
+            Leer artículo completo <i class="fas fa-external-link-alt"></i>
+          </a>
+        </div>
+        <div class="wiki-content">
+          <img *ngIf="wikiSummary.thumbnail?.source" [src]="wikiSummary.thumbnail?.source" [alt]="wikiSummary.title" class="wiki-thumb" />
+          <p class="wiki-text">{{ wikiSummary.extract }}</p>
+        </div>
+      </div>
+
+      <!-- Ticketmaster Events Section -->
+      <div class="content-card events-section">
+        <div class="section-header-row">
+          <h2 class="section-title"><i class="fas fa-ticket-alt text-primary me-2"></i>Espectáculos y Eventos en {{ destination.city }}</h2>
+          <span class="badge bg-primary rounded-pill">Ticketmaster API</span>
+        </div>
+
+        <div *ngIf="isLoadingEvents" class="events-loading">
+          <span class="spinner-border spinner-border-sm text-primary"></span> Consultando eventos locales...
+        </div>
+
+        <div *ngIf="!isLoadingEvents && events.length === 0" class="no-events">
+          <i class="fas fa-calendar-times empty-icon-small"></i>
+          <p>No se encontraron eventos o conciertos programados en Ticketmaster para los próximos 3 meses en esta ciudad.</p>
+        </div>
+
+        <div *ngIf="!isLoadingEvents && events.length > 0" class="events-list">
+          <div *ngFor="let ev of events" class="event-item">
+            <div class="event-img-wrap" *ngIf="ev.imageUrl">
+              <img [src]="ev.imageUrl" [alt]="ev.name" class="event-img" />
+            </div>
+            <div class="event-details">
+              <span class="event-category" *ngIf="ev.category">{{ ev.category }}</span>
+              <h4 class="event-title">{{ ev.name }}</h4>
+              <div class="event-meta">
+                <span class="event-date" *ngIf="ev.eventDate">
+                  <i class="far fa-calendar-alt"></i> {{ ev.eventDate | date:'fullDate' }}
+                </span>
+                <span class="event-venue" *ngIf="ev.venueName">
+                  <i class="fas fa-map-marker-alt"></i> {{ ev.venueName }}
+                </span>
+              </div>
+            </div>
+            <a *ngIf="ev.url" [href]="ev.url" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary ticket-btn">
+              Ver Entradas <i class="fas fa-external-link-alt"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
       <!-- Rating Section -->
       <div class="content-card rating-section">
         <div class="section-header-row">
           <h2 class="section-title">Calificaciones y Opiniones</h2>
           <div class="overall-badge" *ngIf="ratingSummary">
-            <span class="big-score">{{ ratingSummary.averageScore | number:'1.1-1' }}</span>
+            <span class="big-score">{{ (ratingSummary.averageRating || 0) | number:'1.1-1' }}</span>
             <div class="stars-row">
-              <i class="fas fa-star" *ngFor="let s of [1,2,3,4,5]" [class.filled]="s <= (ratingSummary.averageScore || 0)"></i>
+              <i class="fas fa-star" *ngFor="let s of [1,2,3,4,5]" [class.filled]="s <= (ratingSummary.averageRating || 0)"></i>
             </div>
             <span class="count-label">{{ ratingSummary.totalRatings }} valoraciones</span>
           </div>

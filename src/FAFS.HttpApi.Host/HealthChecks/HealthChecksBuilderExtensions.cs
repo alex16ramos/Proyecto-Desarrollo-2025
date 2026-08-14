@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -29,6 +29,10 @@ public static class HealthChecksBuilderExtensions
         var healthChecksUiBuilder = services.AddHealthChecksUI(settings =>
         {
             settings.AddHealthCheckEndpoint("FAFS Health Status", configuration["App:HealthUiCheckUrl"] ?? healthCheckUrl);
+            settings.UseApiEndpointHttpMessageHandler(sp => new System.Net.Http.HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+            });
         });
 
         // Set your HealthCheck UI Storage here

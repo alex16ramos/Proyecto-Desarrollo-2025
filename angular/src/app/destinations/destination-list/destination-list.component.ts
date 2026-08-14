@@ -1,11 +1,13 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { AuthService } from '@abp/ng.core';
 import { DestinationService } from '../../services/destination.service';
 import { FavoriteService } from '../../services/favorite.service';
-import { DestinationDto, CreateUpdateDestinationDto } from '../../models/destination.model';
+import { DestinationDto, CreateUpdateDestinationDto, CityDto } from '../../models/destination.model';
 
 @Component({
   selector: 'app-destination-list',
@@ -14,7 +16,7 @@ import { DestinationDto, CreateUpdateDestinationDto } from '../../models/destina
   templateUrl: './destination-list.component.html',
   styleUrls: ['./destination-list.component.scss'],
 })
-export class DestinationListComponent implements OnInit {
+export class DestinationListComponent implements OnInit, OnDestroy {
   private readonly destinationService = inject(DestinationService);
   private readonly favoriteService = inject(FavoriteService);
   private readonly authService = inject(AuthService);
@@ -22,12 +24,17 @@ export class DestinationListComponent implements OnInit {
   destinations: DestinationDto[] = [];
   filteredDestinations: DestinationDto[] = [];
   popularDestinations: DestinationDto[] = [];
+  citySuggestions: CityDto[] = [];
   countries: string[] = [];
   searchTerm = '';
   selectedCountry = '';
   sortBy = 'rating';
   isLoading = false;
+  isSearchingCities = false;
   showCreateModal = false;
+
+  private readonly searchSubject = new Subject<string>();
+  private searchSubscription?: Subscription;
 
   newDestination: CreateUpdateDestinationDto = {
     name: '',
@@ -44,8 +51,57 @@ export class DestinationListComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.setupDebouncedSearch();
     this.loadDestinations();
     this.loadPopularDestinations();
+  }
+
+  ngOnDestroy(): void {
+    this.searchSubscription?.unsubscribe();
+  }
+
+  setupDebouncedSearch(): void {
+    // Debounce reactivo de 1.2 segundos según la especificación técnica
+    this.searchSubscription = this.searchSubject
+      .pipe(debounceTime(1200), distinctUntilChanged())
+      .subscribe((term) => {
+        this.filterDestinations();
+        if (term.trim().length >= 2) {
+          this.searchExternalCities(term);
+        } else {
+          this.citySuggestions = [];
+        }
+      });
+  }
+
+  onSearchInput(value: string): void {
+    this.searchTerm = value;
+    this.searchSubject.next(value);
+  }
+
+  searchExternalCities(term: string): void {
+    this.isSearchingCities = true;
+    this.destinationService.searchCities(term).subscribe({
+      next: (result) => {
+        this.citySuggestions = result?.cities || [];
+        this.isSearchingCities = false;
+      },
+      error: () => {
+        this.citySuggestions = [];
+        this.isSearchingCities = false;
+      },
+    });
+  }
+
+  selectCitySuggestion(city: CityDto): void {
+    this.newDestination.name = city.name;
+    this.newDestination.city = city.name;
+    this.newDestination.country = city.country;
+    this.newDestination.latitude = city.latitude || '';
+    this.newDestination.longitude = city.longitude || '';
+    this.newDestination.photoUrl = `https://loremflickr.com/800/600/${encodeURIComponent(city.name)},city,travel/all`;
+    this.citySuggestions = [];
+    this.openCreateModal();
   }
 
   loadDestinations(): void {
@@ -114,16 +170,26 @@ export class DestinationListComponent implements OnInit {
     });
   }
 
+  getImageUrl(dest: DestinationDto): string {
+    if (dest.photoUrl && dest.photoUrl.trim() !== '') {
+      return dest.photoUrl;
+    }
+    const keyword = encodeURIComponent(dest.city || dest.name || 'travel');
+    return `https://loremflickr.com/600/400/${keyword},landscape,travel/all`;
+  }
+
   openCreateModal(): void {
-    this.newDestination = {
-      name: '',
-      country: '',
-      city: '',
-      photoUrl: '',
-      latitude: '',
-      longitude: '',
-      description: '',
-    };
+    if (!this.newDestination.photoUrl) {
+      this.newDestination = {
+        name: '',
+        country: '',
+        city: '',
+        photoUrl: '',
+        latitude: '',
+        longitude: '',
+        description: '',
+      };
+    }
     this.showCreateModal = true;
   }
 
@@ -134,6 +200,10 @@ export class DestinationListComponent implements OnInit {
   saveDestination(): void {
     if (!this.newDestination.name || !this.newDestination.country || !this.newDestination.city) {
       return;
+    }
+
+    if (!this.newDestination.photoUrl) {
+      this.newDestination.photoUrl = `https://loremflickr.com/800/600/${encodeURIComponent(this.newDestination.city)},city,travel/all`;
     }
 
     this.destinationService.create(this.newDestination).subscribe({

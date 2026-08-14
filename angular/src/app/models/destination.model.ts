@@ -23,9 +23,28 @@ export interface CreateUpdateDestinationDto {
   description?: string;
 }
 
-export interface CitySearchResultDto {
-  cityName: string;
+export interface CityDto {
+  name: string;
   country: string;
-  latitude: number;
-  longitude: number;
+  countryCode: string;
+  region?: string;
+  latitude?: string;
+  longitude?: string;
+}
+
+export interface CitySearchResultDto {
+  cities: CityDto[];
+}
+
+export interface DestinationEventDto {
+  id: string;
+  name: string;
+  description?: string;
+  eventDate?: string;
+  venueName?: string;
+  city?: string;
+  country?: string;
+  url?: string;
+  imageUrl?: string;
+  category?: string;
 }

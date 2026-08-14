@@ -2,14 +2,22 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '@abp/ng.core';
 import { DestinationService } from '../../services/destination.service';
 import { DestinationRatingService } from '../../services/rating.service';
 import { ExperienceService } from '../../services/experience.service';
 import { FavoriteService } from '../../services/favorite.service';
-import { DestinationDto } from '../../models/destination.model';
+import { DestinationDto, DestinationEventDto } from '../../models/destination.model';
 import { DestinationRatingDto, DestinationRatingSummaryDto } from '../../models/rating.model';
 import { ExperienceDto, CreateUpdateExperienceDto } from '../../models/experience.model';
+
+interface WikipediaSummary {
+  title: string;
+  extract: string;
+  thumbnail?: { source: string };
+  pageUrl?: string;
+}
 
 @Component({
   selector: 'app-destination-detail',
@@ -20,6 +28,7 @@ import { ExperienceDto, CreateUpdateExperienceDto } from '../../models/experienc
 })
 export class DestinationDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly http = inject(HttpClient);
   private readonly destinationService = inject(DestinationService);
   private readonly ratingService = inject(DestinationRatingService);
   private readonly experienceService = inject(ExperienceService);
@@ -31,7 +40,12 @@ export class DestinationDetailComponent implements OnInit {
   ratingSummary?: DestinationRatingSummaryDto;
   ratings: DestinationRatingDto[] = [];
   experiences: ExperienceDto[] = [];
+  events: DestinationEventDto[] = [];
   myRating: DestinationRatingDto | null = null;
+
+  wikiSummary: WikipediaSummary | null = null;
+  isLoadingWiki = false;
+  isLoadingEvents = false;
 
   isLoading = true;
   userScore = 5;
@@ -68,11 +82,61 @@ export class DestinationDetailComponent implements OnInit {
         this.loadRatings();
         this.loadExperiences();
         this.loadMyRating();
+        this.loadEvents();
+        if (dest.city || dest.name) {
+          this.loadWikipediaSummary(dest.city || dest.name);
+        }
         this.isLoading = false;
       },
       error: () => {
         this.isLoading = false;
       },
+    });
+  }
+
+  loadWikipediaSummary(term: string): void {
+    this.isLoadingWiki = true;
+    const cleanTerm = term.split(',')[0].trim();
+    const url = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cleanTerm)}`;
+
+    this.http.get<any>(url).subscribe({
+      next: (data) => {
+        if (data && data.extract) {
+          // Sanitización con Expresiones Regulares para remover referencias y formatos wiki
+          let cleanExtract = data.extract.replace(/\[\d+\]/g, ''); // Remover referencias [1], [2]
+          cleanExtract = cleanExtract.replace(/\s{2,}/g, ' ').trim();
+
+          // Filtro para verificar relevancia geográfica o turística
+          const nonGeoRegex = /(álbum|canción|película de|serie de televisión|político|futbolista)/i;
+          if (!nonGeoRegex.test(data.description || '') && cleanExtract.length > 30) {
+            this.wikiSummary = {
+              title: data.title,
+              extract: cleanExtract,
+              thumbnail: data.thumbnail,
+              pageUrl: data.content_urls?.desktop?.page || `https://es.wikipedia.org/wiki/${encodeURIComponent(cleanTerm)}`
+            };
+          }
+        }
+        this.isLoadingWiki = false;
+      },
+      error: () => {
+        this.wikiSummary = null;
+        this.isLoadingWiki = false;
+      }
+    });
+  }
+
+  loadEvents(): void {
+    this.isLoadingEvents = true;
+    this.destinationService.getEvents(this.destinationId).subscribe({
+      next: (list) => {
+        this.events = list || [];
+        this.isLoadingEvents = false;
+      },
+      error: () => {
+        this.events = [];
+        this.isLoadingEvents = false;
+      }
     });
   }
 
@@ -125,6 +189,14 @@ export class DestinationDetailComponent implements OnInit {
         }
       },
     });
+  }
+
+  getImageUrl(dest?: DestinationDto): string {
+    if (dest?.photoUrl && dest.photoUrl.trim() !== '') {
+      return dest.photoUrl;
+    }
+    const keyword = encodeURIComponent(dest?.city || dest?.name || 'travel');
+    return `https://loremflickr.com/1200/600/${keyword},landscape,travel/all`;
   }
 
   startEditRating(): void {

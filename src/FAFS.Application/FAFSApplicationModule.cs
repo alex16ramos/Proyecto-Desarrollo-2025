@@ -1,4 +1,5 @@
-﻿using FAFS.Destinations;
+using FAFS.Application.Contracts.Destinations;
+using FAFS.Destinations;
 using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp.Account;
 using Volo.Abp.AutoMapper;
@@ -7,7 +8,6 @@ using Volo.Abp.Identity;
 using Volo.Abp.Modularity;
 using Volo.Abp.PermissionManagement;
 using Volo.Abp.SettingManagement;
-
 
 namespace FAFS;
 
@@ -29,16 +29,16 @@ public class FAFSApplicationModule : AbpModule
             options.AddMaps<FAFSApplicationModule>();
         });
 
-        // Configuración del servicio externo GeoDB Cities
-        // 1 Registrar el HttpClient para las llamadas HTTP
+        // Configuración de clientes HTTP para APIs externas
         context.Services.AddHttpClient("GeoDbClient");
+        context.Services.AddHttpClient("TicketmasterClient");
 
-        // 2️ Vincular la configuración del archivo appsettings.json (sección ExternalApis)
+        // Vincular la configuración del archivo appsettings.json (sección ExternalApis)
         context.Services.AddOptions<ExternalApisOptions>()
             .BindConfiguration("ExternalApis");
 
-        // 3️⃣ Registrar el servicio real que implementa la interfaz ICitySearchService
+        // Registrar servicios de integración externa
         context.Services.AddTransient<ICitySearchService, GeoDbCitySearchService>();
-
+        context.Services.AddTransient<ITicketmasterService, TicketmasterService>();
     }
 }
