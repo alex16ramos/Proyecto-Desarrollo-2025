@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FAFS.Application\FAFS.Application.csproj" />
+    <ProjectReference Include="..\..\src\FAFS.EntityFrameworkCore\FAFS.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\FAFS.Domain.Tests\FAFS.Domain.Tests.csproj" />
   </ItemGroup>
 
@@ -17,6 +18,7 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageReference Include="Moq" Version="4.20.69" />
+    <PackageReference Include="Volo.Abp.EntityFrameworkCore.Sqlite" Version="9.3.2" />
   </ItemGroup>
 
 </Project>

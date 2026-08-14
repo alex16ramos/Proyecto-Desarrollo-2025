@@ -1,8 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp;
 using Volo.Abp.Authorization;
 using Volo.Abp.Autofac;
 using Volo.Abp.BackgroundJobs;
+using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Data;
 using Volo.Abp.Modularity;
 using Volo.Abp.Threading;
@@ -13,7 +14,8 @@ namespace FAFS;
     typeof(AbpAutofacModule),
     typeof(AbpTestBaseModule),
     typeof(AbpAuthorizationModule),
-    typeof(AbpBackgroundJobsAbstractionsModule)
+    typeof(AbpBackgroundJobsAbstractionsModule),
+    typeof(AbpBackgroundWorkersModule)
 )]
 public class FAFSTestBaseModule : AbpModule
 {
@@ -22,6 +24,11 @@ public class FAFSTestBaseModule : AbpModule
         Configure<AbpBackgroundJobOptions>(options =>
         {
             options.IsJobExecutionEnabled = false;
+        });
+
+        Configure<AbpBackgroundWorkerOptions>(options =>
+        {
+            options.IsEnabled = false;
         });
 
         context.Services.AddAlwaysAllowAuthorization();

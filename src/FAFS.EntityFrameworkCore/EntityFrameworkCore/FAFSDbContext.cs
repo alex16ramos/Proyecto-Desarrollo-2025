@@ -1,4 +1,8 @@
 using FAFS.Destinations;
+using FAFS.Experiences;
+using FAFS.Favorites;
+using FAFS.Metrics;
+using FAFS.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
@@ -14,7 +18,7 @@ using Volo.Abp.OpenIddict.EntityFrameworkCore;
 using Volo.Abp.PermissionManagement.EntityFrameworkCore;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
 using Volo.Abp.Users;
-using FAFS; // para que reconozca IUserOwned y DestinationRating
+using FAFS;
 
 namespace FAFS.EntityFrameworkCore;
 
@@ -29,19 +33,12 @@ public class FAFSDbContext : AbpDbContext<FAFSDbContext>, IIdentityDbContext
 
     public DbSet<Destination> Destinations { get; set; }
     public DbSet<DestinationRating> DestinationRatings { get; set; }
+    public DbSet<Experience> Experiences { get; set; }
+    public DbSet<FavoriteDestination> FavoriteDestinations { get; set; }
+    public DbSet<ApiUsageMetric> ApiUsageMetrics { get; set; }
+    public DbSet<AppNotification> AppNotifications { get; set; }
 
     #region Entities from the modules
-
-    /* Notice: We only implemented IIdentityProDbContext 
-     * and replaced them for this DbContext. This allows you to perform JOIN
-     * queries for the entities of these modules over the repositories easily. You
-     * typically don't need that for other modules. But, if you need, you can
-     * implement the DbContext interface of the needed module and use ReplaceDbContext
-     * attribute just like IIdentityProDbContext .
-     *
-     * More info: Replacing a DbContext of a module ensures that the related module
-     * uses this DbContext on runtime. Otherwise, it will use its own DbContext class.
-     */
 
     // Identity
     public DbSet<IdentityUser> Users { get; set; }
@@ -55,7 +52,7 @@ public class FAFSDbContext : AbpDbContext<FAFSDbContext>, IIdentityDbContext
 
     #endregion
 
-    public FAFSDbContext(DbContextOptions<FAFSDbContext> options) // EF Core constructor
+    public FAFSDbContext(DbContextOptions<FAFSDbContext> options)
         : base(options)
     {
 
@@ -78,55 +75,91 @@ public class FAFSDbContext : AbpDbContext<FAFSDbContext>, IIdentityDbContext
 
         /* Configure your own tables/entities inside here */
 
-        //builder.Entity<YourEntity>(b =>
-        //{
-        //    b.ToTable(FAFSConsts.DbTablePrefix + "YourEntities", FAFSConsts.DbSchema);
-        //    b.ConfigureByConvention(); //auto configure for the base class props
-        //    //...
-        //});
-
         builder.Entity<Destination>(b =>
         {
             b.ToTable("Destination", Schema);
-            b.ConfigureByConvention(); // Id, propiedades de auditoría, etc.
+            b.ConfigureByConvention();
 
-            // Propiedades escalares obligatorias
-            b.Property(d => d.Name).IsRequired();
-            b.Property(d => d.Country).IsRequired();
-            b.Property(d => d.City).IsRequired();
-
-            // Propiedades escalares opcionales
-            b.Property(d => d.PhotoUrl).HasMaxLength(500); // opcional: limitar tamaño
+            b.Property(d => d.Name).IsRequired().HasMaxLength(200);
+            b.Property(d => d.Country).IsRequired().HasMaxLength(100);
+            b.Property(d => d.City).IsRequired().HasMaxLength(100);
+            b.Property(d => d.Description).HasMaxLength(2000);
+            b.Property(d => d.PhotoUrl).HasMaxLength(500);
             b.Property(d => d.LastUpdated);
 
-            // 🔹 Value Object Coordinates
             b.OwnsOne(d => d.Coordinates, c =>
             {
                 c.Property(p => p.Latitude)
                  .HasColumnName("Latitude")
-                 .IsRequired();
+                 .IsRequired()
+                 .HasMaxLength(50);
 
                 c.Property(p => p.Longitude)
                  .HasColumnName("Longitude")
-                 .IsRequired();
-            });
-
-            builder.Entity<DestinationRating>(b =>
-            {
-                b.ToTable("DestinationRatings", Schema);
-                b.ConfigureByConvention();
-
-                b.Property(x => x.Score).IsRequired();
-                b.Property(x => x.Comment).HasMaxLength(1000);
-
-                b.HasIndex(x => new { x.UserId, x.DestinationId }).IsUnique(false);
-
-                // 🔹 Filtro automático por usuario autenticado
-                b.HasQueryFilter(rating =>
-                    _currentUser == null ||
-                    !_currentUser.IsAuthenticated ||
-                    rating.UserId == _currentUser.GetId());
+                 .IsRequired()
+                 .HasMaxLength(50);
             });
         });
-     }   
+
+        builder.Entity<DestinationRating>(b =>
+        {
+            b.ToTable("DestinationRatings", Schema);
+            b.ConfigureByConvention();
+
+            b.Property(x => x.Score).IsRequired();
+            b.Property(x => x.Comment).HasMaxLength(1000);
+
+            b.HasIndex(x => new { x.UserId, x.DestinationId }).IsUnique(false);
+            b.HasIndex(x => x.DestinationId);
+        });
+
+        builder.Entity<Experience>(b =>
+        {
+            b.ToTable("Experiences", Schema);
+            b.ConfigureByConvention();
+
+            b.Property(x => x.Title).IsRequired().HasMaxLength(200);
+            b.Property(x => x.Description).IsRequired().HasMaxLength(4000);
+            b.Property(x => x.Comments).HasMaxLength(2000);
+            b.Property(x => x.Rating).IsRequired();
+
+            b.HasIndex(x => x.DestinationId);
+            b.HasIndex(x => x.UserId);
+        });
+
+        builder.Entity<FavoriteDestination>(b =>
+        {
+            b.ToTable("FavoriteDestinations", Schema);
+            b.ConfigureByConvention();
+
+            b.HasIndex(x => new { x.UserId, x.DestinationId }).IsUnique(true);
+        });
+
+        builder.Entity<ApiUsageMetric>(b =>
+        {
+            b.ToTable("ApiUsageMetrics", Schema);
+            b.ConfigureByConvention();
+
+            b.Property(x => x.Endpoint).IsRequired().HasMaxLength(300);
+            b.Property(x => x.HttpMethod).IsRequired().HasMaxLength(10);
+            b.Property(x => x.IpAddress).HasMaxLength(50);
+
+            b.HasIndex(x => x.Timestamp);
+            b.HasIndex(x => x.Endpoint);
+        });
+
+        builder.Entity<AppNotification>(b =>
+        {
+            b.ToTable("AppNotifications", Schema);
+            b.ConfigureByConvention();
+
+            b.Property(x => x.Title).IsRequired().HasMaxLength(200);
+            b.Property(x => x.Message).IsRequired().HasMaxLength(2000);
+            b.Property(x => x.Type).HasMaxLength(50);
+            b.Property(x => x.IsRead).IsRequired();
+
+            b.HasIndex(x => x.UserId);
+            b.HasIndex(x => new { x.UserId, x.IsRead });
+        });
+    }
 }
