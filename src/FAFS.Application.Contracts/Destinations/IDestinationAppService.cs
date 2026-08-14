@@ -1,4 +1,4 @@
-﻿using FAFS.Application.Contracts.Destinations;
+using FAFS.Application.Contracts.Destinations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,5 +20,6 @@ namespace FAFS.Destinations
     {
         // Custom method for searching cities (external service)
         Task<CitySearchResultDto> SearchCitiesAsync(CitySearchRequestDto input);
+        Task<List<DestinationDto>> GetPopularDestinationsAsync(int count = 6);
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Volo.Abp.Domain.Entities.Auditing;
 using Volo.Abp.Domain.Values;
@@ -7,12 +7,13 @@ namespace FAFS.Destinations
 {
     public class Destination : AuditedAggregateRoot<Guid>
     {
-        public string Name { get; private set; } = string.Empty;
-        public string Country { get; private set; } = string.Empty;
-        public string City { get; private set; } = string.Empty;
-        public string PhotoUrl { get; private set; } = string.Empty;
-        public Coordinates Coordinates { get; private set; } = default!;
-        public DateTime LastUpdated { get; private set; } = DateTime.Now;
+        public string Name { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string PhotoUrl { get; set; } = string.Empty;
+        public Coordinates Coordinates { get; set; } = default!;
+        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
 
         // EF requiere ctor protegido
         protected Destination() { }
@@ -24,7 +25,8 @@ namespace FAFS.Destinations
             string city,
             string photoUrl,
             DateTime lastUpdated,
-            Coordinates coordinates
+            Coordinates coordinates,
+            string description = ""
         ) : base(id)
         {
             Name = name;
@@ -33,6 +35,7 @@ namespace FAFS.Destinations
             PhotoUrl = photoUrl;
             LastUpdated = lastUpdated;
             Coordinates = coordinates;
+            Description = description;
         }
     }
 
@@ -57,5 +60,28 @@ namespace FAFS.Destinations
             yield return Latitude;
             yield return Longitude;
         }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is Coordinates other)
+            {
+                return Latitude == other.Latitude && Longitude == other.Longitude;
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Latitude, Longitude);
+        }
+
+        public static bool operator ==(Coordinates? left, Coordinates? right)
+        {
+            if (ReferenceEquals(left, null) && ReferenceEquals(right, null)) return true;
+            if (ReferenceEquals(left, null) || ReferenceEquals(right, null)) return false;
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Coordinates? left, Coordinates? right) => !(left == right);
     }
 }

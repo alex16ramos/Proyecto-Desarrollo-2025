@@ -1,4 +1,4 @@
-﻿using FAFS.Destinations;
+using FAFS.Destinations;
 using Shouldly;
 using System;
 using System.Threading.Tasks;
@@ -11,13 +11,13 @@ namespace FAFS.Application.Tests.Destinations
 {
     public class DestinationAppService_Tests : FAFSApplicationTestBase
     {
-        private readonly DestinationAppService _destinationAppService;
+        private readonly IDestinationAppService _destinationAppService;
         private readonly IRepository<Destination, Guid> _destinationRepository;
 
         public DestinationAppService_Tests()
         {
             _destinationRepository = GetRequiredService<IRepository<Destination, Guid>>();
-            _destinationAppService = GetRequiredService<DestinationAppService>();
+            _destinationAppService = GetRequiredService<IDestinationAppService>();
         }
 
         [Fact]

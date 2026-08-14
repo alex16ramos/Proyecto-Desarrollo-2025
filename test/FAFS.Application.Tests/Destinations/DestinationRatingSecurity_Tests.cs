@@ -1,28 +1,35 @@
-﻿using System.Net;
-using System.Net.Http;
+using System;
 using System.Threading.Tasks;
+using FAFS.Application.Contracts.Destinations;
 using Shouldly;
+using Volo.Abp.Authorization;
 using Xunit;
 
 namespace FAFS.Application.Tests.Destinations
 {
     public class DestinationRatingSecurity_Tests : FAFSApplicationTestBase
     {
-        [Fact]
-        public async Task Should_Return_401_If_No_Token_Provided()
+        private readonly IDestinationRatingAppService _ratingAppService;
+
+        public DestinationRatingSecurity_Tests()
         {
-            // Arrange
-            var client = GetRequiredService<IHttpClientFactory>().CreateClient();
-            var destinationId = "00000000-0000-0000-0000-000000000001";
+            _ratingAppService = GetRequiredService<IDestinationRatingAppService>();
+        }
 
-            // Act
-            var response = await client.PostAsync(
-                $"/api/app/destination-rating/rate-destination/{destinationId}?score=5&comment=SinToken",
-                null
-            );
+        [Fact]
+        public async Task Should_Throw_AuthorizationException_If_Not_Authenticated()
+        {
+            // Arrange: explicit unauthenticated principal
+            var destinationId = Guid.NewGuid();
 
-            // Assert
-            response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+            // Act & Assert
+            using (CurrentPrincipalAccessor.Change(new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity())))
+            {
+                await Should.ThrowAsync<AbpAuthorizationException>(async () =>
+                {
+                    await _ratingAppService.RateDestinationAsync(destinationId, 5, "SinToken");
+                });
+            }
         }
     }
 }

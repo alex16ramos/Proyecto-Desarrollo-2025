@@ -1,4 +1,4 @@
-﻿using FAFS.Application.Contracts.Destinations;
+using FAFS.Application.Contracts.Destinations;
 using FAFS.Destinations;
 using Shouldly;
 using System;
@@ -22,19 +22,22 @@ namespace FAFS.Application.Tests.Destinations
         public async Task Should_Filter_By_Current_User()
         {
             // Arrange
-            var currentUser = GetRequiredService<ICurrentUser>();
-            var userId = currentUser.Id ?? Guid.NewGuid();
+            var userId = Guid.NewGuid();
             var destinationId = Guid.NewGuid();
 
             // Act
-            await _appService.RateDestinationAsync(destinationId, 5, "Increíble");
+            using (Login(userId))
+            {
+                await _appService.RateDestinationAsync(destinationId, 5, "Increíble");
+            }
 
             // Assert
             var repo = GetRequiredService<IRepository<DestinationRating, Guid>>();
-
-            var ratings = await repo.GetListAsync();
+            var ratings = await repo.GetListAsync(r => r.DestinationId == destinationId);
 
             ratings.ShouldAllBe(r => r.UserId == userId);
+            ratings.Count.ShouldBe(1);
+            ratings[0].Score.ShouldBe(5);
         }
     }
 }
