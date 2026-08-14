@@ -1,0 +1,56 @@
+<div class="notifications-container">
+  <div class="header-section">
+    <div>
+      <h1 class="page-title">Notificaciones</h1>
+      <p class="page-subtitle">Mantente al día con las novedades, experiencias y cambios en tus destinos favoritos</p>
+    </div>
+    <button
+      *ngIf="notifications.length > 0"
+      class="btn btn-outline-primary mark-all-btn"
+      (click)="markAllAsRead()"
+      id="btn-mark-all-read"
+    >
+      <i class="fas fa-check-double"></i> Marcar todas como leídas
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p>Cargando notificaciones...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && notifications.length === 0" class="empty-state">
+    <i class="fas fa-bell-slash empty-icon"></i>
+    <h3>No tienes notificaciones pendientes</h3>
+    <p>Te avisaremos cuando haya novedades en tus destinos guardados o interactúen con tus reseñas.</p>
+  </div>
+
+  <!-- Notification List -->
+  <div *ngIf="!isLoading && notifications.length > 0" class="notifications-list">
+    <div
+      *ngFor="let item of notifications"
+      class="notification-card"
+      [class.unread]="!item.isRead"
+      (click)="markAsRead(item)"
+      [id]="'notif-card-' + item.id"
+    >
+      <div class="notif-icon-wrap" [class.unread]="!item.isRead">
+        <i class="fas fa-bell"></i>
+      </div>
+      <div class="notif-content">
+        <div class="notif-header">
+          <h4 class="notif-title">{{ item.title }}</h4>
+          <span class="notif-time">{{ item.creationTime | date:'medium' }}</span>
+        </div>
+        <p class="notif-message">{{ item.message }}</p>
+      </div>
+      <div class="notif-status" *ngIf="!item.isRead">
+        <span class="unread-dot"></span>
+      </div>
+    </div>
+  </div>
+</div>
