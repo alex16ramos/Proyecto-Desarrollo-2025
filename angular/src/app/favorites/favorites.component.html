@@ -1,0 +1,70 @@
+<div class="favorites-container">
+  <div class="header-section">
+    <div>
+      <h1 class="page-title">Mis Destinos Favoritos</h1>
+      <p class="page-subtitle">Accede rápidamente a tus lugares guardados y soñados</p>
+    </div>
+    <a routerLink="/destinations" class="btn btn-outline-primary explore-btn" id="btn-explore-more">
+      <i class="fas fa-compass"></i> Explorar Más Destinos
+    </a>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p>Cargando tus favoritos...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && favorites.length === 0" class="empty-state">
+    <i class="fas fa-heart-broken empty-icon"></i>
+    <h3>Aún no tienes destinos favoritos</h3>
+    <p>Explora nuestro catálogo de destinos turísticos y haz clic en el corazón para guardarlos aquí.</p>
+    <a routerLink="/destinations" class="btn btn-primary mt-3" id="btn-empty-explore">
+      Descubrir Destinos
+    </a>
+  </div>
+
+  <!-- Favorites Grid -->
+  <div *ngIf="!isLoading && favorites.length > 0" class="favorites-grid">
+    <div
+      *ngFor="let dest of favorites"
+      class="favorite-card"
+      [routerLink]="['/destinations', dest.id]"
+      [id]="'fav-card-' + dest.id"
+    >
+      <div class="card-image-wrap">
+        <img
+          [src]="dest.photoUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80'"
+          [alt]="dest.name"
+          class="card-image"
+        />
+        <button
+          class="remove-fav-btn"
+          (click)="removeFavorite($event, dest)"
+          title="Quitar de favoritos"
+          [id]="'remove-fav-btn-' + dest.id"
+        >
+          <i class="fas fa-heart"></i>
+        </button>
+        <span class="location-badge">
+          <i class="fas fa-map-marker-alt"></i> {{ dest.city }}, {{ dest.country }}
+        </span>
+      </div>
+
+      <div class="card-content">
+        <h3 class="card-title">{{ dest.name }}</h3>
+        <p class="card-desc">{{ dest.description || 'Destino guardado en tu lista personal.' }}</p>
+        <div class="card-footer-meta">
+          <div class="rating-info">
+            <i class="fas fa-star text-warning"></i>
+            <span>{{ (dest.averageRating || 0) | number:'1.1-1' }}</span>
+          </div>
+          <span class="details-cta">Ver Destino <i class="fas fa-chevron-right"></i></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
