@@ -1,0 +1,268 @@
+<div class="destination-detail-container" *ngIf="destination">
+  <!-- Top Navigation & Actions -->
+  <div class="top-nav-bar">
+    <a routerLink="/destinations" class="back-link" id="btn-back-to-destinations">
+      <i class="fas fa-arrow-left"></i> Volver a Destinos
+    </a>
+    <div class="top-actions">
+      <button
+        class="favorite-action-btn"
+        [class.is-fav]="destination.isFavorite"
+        (click)="toggleFavorite()"
+        id="btn-detail-fav"
+      >
+        <i [class]="destination.isFavorite ? 'fas fa-heart' : 'far fa-heart'"></i>
+        {{ destination.isFavorite ? 'En Favoritos' : 'Guardar en Favoritos' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Hero Header -->
+  <div class="hero-header">
+    <div class="hero-image-wrap">
+      <img
+        [src]="destination.photoUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80'"
+        [alt]="destination.name"
+        class="hero-image"
+      />
+      <div class="hero-overlay"></div>
+    </div>
+    <div class="hero-content">
+      <span class="location-pill">
+        <i class="fas fa-map-marker-alt"></i> {{ destination.city }}, {{ destination.country }}
+      </span>
+      <h1 class="hero-title">{{ destination.name }}</h1>
+      <div class="hero-meta">
+        <div class="rating-display">
+          <i class="fas fa-star text-warning"></i>
+          <span class="score">{{ (ratingSummary?.averageScore || 0) | number:'1.1-1' }}</span>
+          <span class="total">({{ ratingSummary?.totalRatings || 0 }} calificaciones)</span>
+        </div>
+        <span class="coords" *ngIf="destination.latitude && destination.longitude">
+          <i class="fas fa-globe"></i> {{ destination.latitude }}, {{ destination.longitude }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="content-grid">
+    <!-- Left Column: Description, Ratings & Reviews -->
+    <div class="main-column">
+      <!-- Description Card -->
+      <div class="content-card description-card">
+        <h2 class="section-title">Sobre este Destino</h2>
+        <p class="description-text">
+          {{ destination.description || 'Explora este increíble destino turístico con paisajes únicos y momentos memorables.' }}
+        </p>
+      </div>
+
+      <!-- Rating Section -->
+      <div class="content-card rating-section">
+        <div class="section-header-row">
+          <h2 class="section-title">Calificaciones y Opiniones</h2>
+          <div class="overall-badge" *ngIf="ratingSummary">
+            <span class="big-score">{{ ratingSummary.averageScore | number:'1.1-1' }}</span>
+            <div class="stars-row">
+              <i class="fas fa-star" *ngFor="let s of [1,2,3,4,5]" [class.filled]="s <= (ratingSummary.averageScore || 0)"></i>
+            </div>
+            <span class="count-label">{{ ratingSummary.totalRatings }} valoraciones</span>
+          </div>
+        </div>
+
+        <!-- Own Rating Card if already rated and not editing -->
+        <div class="my-rating-card mb-4" *ngIf="myRating && !isEditingRating">
+          <div class="my-rating-header">
+            <div>
+              <span class="badge bg-success me-2">Tu Reseña</span>
+              <span class="rating-date text-muted">{{ myRating.creationTime | date:'mediumDate' }}</span>
+            </div>
+            <div class="rating-actions">
+              <button class="btn btn-outline-primary btn-sm me-2" (click)="startEditRating()" id="btn-edit-my-rating">
+                <i class="fas fa-edit"></i> Editar
+              </button>
+              <button class="btn btn-outline-danger btn-sm" (click)="deleteRating()" id="btn-delete-my-rating">
+                <i class="fas fa-trash-alt"></i> Eliminar
+              </button>
+            </div>
+          </div>
+          <div class="my-rating-stars mt-2">
+            <span *ngFor="let s of [1,2,3,4,5]" class="star" [class.filled]="s <= myRating.score">★</span>
+            <span class="ms-2 fw-bold text-warning">{{ myRating.score }}/5</span>
+          </div>
+          <p class="my-rating-comment mt-2" *ngIf="myRating.comment">{{ myRating.comment }}</p>
+        </div>
+
+        <!-- Add or Edit Rating Form -->
+        <div class="add-rating-box" *ngIf="!myRating || isEditingRating">
+          <h3 class="box-title">
+            {{ isEditingRating ? 'Modificar tu Calificación' : '¿Visitaste este destino? ¡Deja tu calificación!' }}
+          </h3>
+          <div class="star-rating-picker">
+            <span
+              *ngFor="let star of [1, 2, 3, 4, 5]"
+              class="interactive-star"
+              [class.active]="star <= userScore"
+              (click)="userScore = star"
+            >
+              ★
+            </span>
+            <span class="score-text">({{ userScore }} de 5 estrellas)</span>
+          </div>
+          <div class="form-group my-3">
+            <textarea
+              class="form-control comment-input"
+              rows="3"
+              placeholder="Escribe tu reseña o sugerencia para otros viajeros (opcional)..."
+              [(ngModel)]="userComment"
+              id="rating-comment-input"
+            ></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button
+              class="btn btn-primary submit-rating-btn"
+              (click)="submitRating()"
+              [disabled]="isSubmittingRating"
+              id="btn-submit-rating"
+            >
+              <i class="fas fa-paper-plane"></i> {{ isSubmittingRating ? 'Guardando...' : (isEditingRating ? 'Guardar Cambios' : 'Enviar Calificación') }}
+            </button>
+            <button
+              *ngIf="isEditingRating"
+              class="btn btn-outline-secondary"
+              (click)="cancelEditRating()"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+
+        <!-- Reviews List -->
+        <div class="reviews-list mt-4">
+          <h3 class="subsection-title">Reseñas de la Comunidad</h3>
+          <div *ngIf="ratings.length === 0" class="no-reviews">
+            <p>Aún no hay reseñas escritas para este destino. ¡Sé el primero en opinar!</p>
+          </div>
+          <div *ngFor="let r of ratings" class="review-item">
+            <div class="review-header">
+              <div class="user-avatar">
+                <i class="fas fa-user"></i>
+              </div>
+              <div class="user-info">
+                <span class="user-name">{{ r.userName || 'Viajero de FAFS' }}</span>
+                <span class="review-date">{{ r.creationTime | date:'mediumDate' }}</span>
+              </div>
+              <div class="review-stars">
+                <span *ngFor="let s of [1,2,3,4,5]" class="star" [class.filled]="s <= r.score">★</span>
+              </div>
+            </div>
+            <p class="review-text" *ngIf="r.comment">{{ r.comment }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Experiences Shared -->
+    <div class="sidebar-column">
+      <div class="content-card experiences-card">
+        <div class="sidebar-header">
+          <h2 class="section-title">Experiencias</h2>
+          <button class="btn btn-outline-primary btn-sm" (click)="openExperienceModal()" id="btn-add-experience">
+            <i class="fas fa-plus"></i> Compartir
+          </button>
+        </div>
+
+        <div *ngIf="experiences.length === 0" class="no-experiences">
+          <i class="fas fa-compass empty-icon"></i>
+          <p>No hay bitácoras de experiencias aún. ¡Comparte tu viaje con la comunidad!</p>
+        </div>
+
+        <div *ngFor="let exp of experiences" class="experience-card">
+          <div class="exp-header">
+            <h4 class="exp-title">{{ exp.title }}</h4>
+            <span class="exp-score">★ {{ exp.rating }}/5</span>
+          </div>
+          <p class="exp-desc">{{ exp.description }}</p>
+          <div class="exp-comment-box" *ngIf="exp.comments">
+            <i class="fas fa-lightbulb tip-icon"></i>
+            <span class="tip-text">{{ exp.comments }}</span>
+          </div>
+          <div class="exp-footer">
+            <span class="exp-author"><i class="fas fa-user-circle"></i> {{ exp.userName || 'Viajero' }}</span>
+            <span class="exp-date">{{ exp.dateExperienced | date:'mediumDate' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Experience Modal -->
+  <div *ngIf="showExperienceModal" class="modal-backdrop" (click)="closeExperienceModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Compartir Experiencia de Viaje</h2>
+        <button class="close-btn" (click)="closeExperienceModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group mb-3">
+          <label for="exp-title" class="form-label">Título de la Experiencia *</label>
+          <input
+            id="exp-title"
+            type="text"
+            class="form-control"
+            placeholder="Ej: Caminata hacia el mirador"
+            [(ngModel)]="newExperience.title"
+            required
+          />
+        </div>
+        <div class="form-group mb-3">
+          <label for="exp-desc" class="form-label">Relato o Descripción *</label>
+          <textarea
+            id="exp-desc"
+            class="form-control"
+            rows="3"
+            placeholder="Cuenta tu experiencia y qué fue lo más destacado..."
+            [(ngModel)]="newExperience.description"
+            required
+          ></textarea>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="exp-date" class="form-label">Fecha de la Visita *</label>
+            <input
+              id="exp-date"
+              type="date"
+              class="form-control"
+              [(ngModel)]="newExperience.dateExperienced"
+              required
+            />
+          </div>
+          <div class="col-md-6">
+            <label for="exp-rating" class="form-label">Calificación (1 a 5) *</label>
+            <select id="exp-rating" class="form-select" [(ngModel)]="newExperience.rating">
+              <option [ngValue]="5">5 - Excelente</option>
+              <option [ngValue]="4">4 - Muy Bueno</option>
+              <option [ngValue]="3">3 - Bueno</option>
+              <option [ngValue]="2">2 - Regular</option>
+              <option [ngValue]="1">1 - Malo</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group mb-3">
+          <label for="exp-comments" class="form-label">Consejos o Recomendaciones</label>
+          <input
+            id="exp-comments"
+            type="text"
+            class="form-control"
+            placeholder="Ej: Llevar protector solar y calzado cómodo"
+            [(ngModel)]="newExperience.comments"
+          />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeExperienceModal()">Cancelar</button>
+        <button class="btn btn-primary" (click)="saveExperience()" id="btn-save-experience">Publicar Experiencia</button>
+      </div>
+    </div>
+  </div>
+</div>

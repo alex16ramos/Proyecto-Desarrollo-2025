@@ -1,0 +1,236 @@
+<div class="destinations-container">
+  <!-- Header & Actions -->
+  <div class="header-section">
+    <div class="title-wrap">
+      <h1 class="page-title">Destinos Turísticos</h1>
+      <p class="page-subtitle">Explora los lugares más increíbles del mundo y planifica tu próxima aventura</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary create-btn" (click)="openCreateModal()" id="btn-create-destination">
+        <i class="fas fa-plus"></i> Nuevo Destino
+      </button>
+    </div>
+  </div>
+
+  <!-- Popular / Featured Destinations Showcase -->
+  <div *ngIf="popularDestinations.length > 0 && !searchTerm && !selectedCountry" class="popular-section mb-4">
+    <h2 class="section-title"><i class="fas fa-fire text-danger me-2"></i>Destinos Populares y Destacados</h2>
+    <div class="popular-grid">
+      <div
+        *ngFor="let pop of popularDestinations"
+        class="popular-card"
+        [routerLink]="['/destinations', pop.id]"
+      >
+        <img
+          [src]="pop.photoUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=400&q=80'"
+          [alt]="pop.name"
+          class="pop-image"
+        />
+        <div class="pop-overlay">
+          <span class="pop-rating">★ {{ (pop.averageRating || 0) | number:'1.1-1' }}</span>
+          <h4 class="pop-name">{{ pop.name }}</h4>
+          <span class="pop-location"><i class="fas fa-map-marker-alt"></i> {{ pop.city }}, {{ pop.country }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced Filters Bar -->
+  <div class="filters-bar mb-4">
+    <div class="search-box">
+      <i class="fas fa-search search-icon"></i>
+      <input
+        type="text"
+        class="form-control search-input"
+        placeholder="Buscar por nombre, descripción o ciudad..."
+        [(ngModel)]="searchTerm"
+        (input)="filterDestinations()"
+        id="destination-search-input"
+      />
+    </div>
+
+    <div class="filter-controls">
+      <div class="filter-group">
+        <label for="country-filter" class="filter-label">País:</label>
+        <select
+          id="country-filter"
+          class="form-select filter-select"
+          [(ngModel)]="selectedCountry"
+          (change)="filterDestinations()"
+        >
+          <option value="">Todos los países</option>
+          <option *ngFor="let c of countries" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="sort-filter" class="filter-label">Ordenar:</label>
+        <select
+          id="sort-filter"
+          class="form-select filter-select"
+          [(ngModel)]="sortBy"
+          (change)="filterDestinations()"
+        >
+          <option value="rating">Mayor Calificación</option>
+          <option value="name">Alfabético (A-Z)</option>
+          <option value="country">Por País</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p>Cargando destinos turísticos...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && filteredDestinations.length === 0" class="empty-state">
+    <i class="fas fa-map-marked-alt empty-icon"></i>
+    <h3>No se encontraron destinos</h3>
+    <p>Intenta ajustar tu búsqueda o añade un nuevo destino turístico.</p>
+  </div>
+
+  <!-- Destination Grid -->
+  <div *ngIf="!isLoading && filteredDestinations.length > 0" class="destinations-grid">
+    <div
+      *ngFor="let dest of filteredDestinations"
+      class="destination-card"
+      [routerLink]="['/destinations', dest.id]"
+      [id]="'destination-card-' + dest.id"
+    >
+      <div class="card-image-wrap">
+        <img
+          [src]="dest.photoUrl || 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=600&q=80'"
+          [alt]="dest.name"
+          class="card-image"
+          loading="lazy"
+        />
+        <button
+          class="favorite-badge-btn"
+          [class.is-fav]="dest.isFavorite"
+          (click)="toggleFavorite($event, dest)"
+          [title]="dest.isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'"
+          [id]="'fav-btn-' + dest.id"
+        >
+          <i [class]="dest.isFavorite ? 'fas fa-heart' : 'far fa-heart'"></i>
+        </button>
+        <span class="country-badge">
+          <i class="fas fa-map-marker-alt"></i> {{ dest.city }}, {{ dest.country }}
+        </span>
+      </div>
+
+      <div class="card-body-content">
+        <h3 class="card-title">{{ dest.name }}</h3>
+        <p class="card-description">{{ dest.description || 'Descubre todo lo que este maravilloso lugar tiene para ofrecer.' }}</p>
+
+        <div class="card-footer-info">
+          <div class="rating-badge">
+            <i class="fas fa-star star-icon"></i>
+            <span class="rating-score">{{ (dest.averageRating || 0) | number:'1.1-1' }}</span>
+            <span class="rating-count">({{ dest.totalRatings || 0 }})</span>
+          </div>
+          <span class="explore-link">
+            Ver detalles <i class="fas fa-arrow-right"></i>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Modal -->
+  <div *ngIf="showCreateModal" class="modal-backdrop" (click)="closeCreateModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Añadir Nuevo Destino</h2>
+        <button class="close-btn" (click)="closeCreateModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group mb-3">
+          <label for="dest-name" class="form-label">Nombre del Destino *</label>
+          <input
+            id="dest-name"
+            type="text"
+            class="form-control"
+            placeholder="Ej: Glaciar Perito Moreno"
+            [(ngModel)]="newDestination.name"
+            required
+          />
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="dest-country" class="form-label">País *</label>
+            <input
+              id="dest-country"
+              type="text"
+              class="form-control"
+              placeholder="Ej: Argentina"
+              [(ngModel)]="newDestination.country"
+              required
+            />
+          </div>
+          <div class="col-md-6">
+            <label for="dest-city" class="form-label">Ciudad *</label>
+            <input
+              id="dest-city"
+              type="text"
+              class="form-control"
+              placeholder="Ej: El Calafate"
+              [(ngModel)]="newDestination.city"
+              required
+            />
+          </div>
+        </div>
+        <div class="form-group mb-3">
+          <label for="dest-photo" class="form-label">URL de Fotografía</label>
+          <input
+            id="dest-photo"
+            type="url"
+            class="form-control"
+            placeholder="https://..."
+            [(ngModel)]="newDestination.photoUrl"
+          />
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="dest-lat" class="form-label">Latitud</label>
+            <input
+              id="dest-lat"
+              type="text"
+              class="form-control"
+              placeholder="-50.5"
+              [(ngModel)]="newDestination.latitude"
+            />
+          </div>
+          <div class="col-md-6">
+            <label for="dest-lng" class="form-label">Longitud</label>
+            <input
+              id="dest-lng"
+              type="text"
+              class="form-control"
+              placeholder="-73.0"
+              [(ngModel)]="newDestination.longitude"
+            />
+          </div>
+        </div>
+        <div class="form-group mb-3">
+          <label for="dest-desc" class="form-label">Descripción</label>
+          <textarea
+            id="dest-desc"
+            class="form-control"
+            rows="3"
+            placeholder="Describe las atracciones y detalles de este lugar..."
+            [(ngModel)]="newDestination.description"
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeCreateModal()">Cancelar</button>
+        <button class="btn btn-primary" (click)="saveDestination()" id="btn-save-destination">Guardar Destino</button>
+      </div>
+    </div>
+  </div>
+</div>
