@@ -36,46 +36,101 @@
   </div>
 
   <!-- Advanced Filters Bar -->
-  <div class="filters-bar mb-4">
-    <div class="search-box">
-      <i class="fas fa-search search-icon"></i>
-      <input
-        type="text"
-        class="form-control search-input"
-        placeholder="Buscar por nombre, descripción o ciudad..."
-        [ngModel]="searchTerm"
-        (input)="onSearchInput($any($event.target).value)"
-        id="destination-search-input"
-      />
-      <span *ngIf="isSearchingCities" class="spinner-border spinner-border-sm text-primary search-spinner"></span>
-    </div>
-
-    <div class="filter-controls">
-      <div class="filter-group">
-        <label for="country-filter" class="filter-label">País:</label>
-        <select
-          id="country-filter"
-          class="form-select filter-select"
-          [(ngModel)]="selectedCountry"
-          (change)="filterDestinations()"
-        >
-          <option value="">Todos los países</option>
-          <option *ngFor="let c of countries" [value]="c">{{ c }}</option>
-        </select>
+  <div class="filters-card mb-4">
+    <div class="filters-top-row">
+      <div class="search-box">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          class="form-control search-input"
+          placeholder="Buscar por nombre, descripción o ciudad..."
+          [ngModel]="searchTerm"
+          (input)="onSearchInput($any($event.target).value)"
+          id="destination-search-input"
+        />
+        <span *ngIf="isSearchingCities" class="spinner-border spinner-border-sm text-primary search-spinner"></span>
       </div>
 
-      <div class="filter-group">
-        <label for="sort-filter" class="filter-label">Ordenar:</label>
-        <select
-          id="sort-filter"
-          class="form-select filter-select"
-          [(ngModel)]="sortBy"
-          (change)="filterDestinations()"
+      <div class="filters-actions">
+        <button
+          class="btn btn-outline-secondary btn-filter-toggle"
+          [class.active]="showAdvancedFilters || selectedCountry || selectedRegion || minPopulation > 0"
+          (click)="toggleAdvancedFilters()"
+          id="btn-toggle-adv-filters"
         >
-          <option value="rating">Mayor Calificación</option>
-          <option value="name">Alfabético (A-Z)</option>
-          <option value="country">Por País</option>
-        </select>
+          <i class="fas fa-sliders-h me-1"></i> Filtros Avanzados
+          <span *ngIf="selectedCountry || selectedRegion || minPopulation > 0" class="badge-filter-dot"></span>
+        </button>
+
+        <div class="sort-select-wrap">
+          <label for="sort-filter" class="sort-label me-1"><i class="fas fa-sort-amount-down"></i></label>
+          <select
+            id="sort-filter"
+            class="form-select filter-select sort-select"
+            [(ngModel)]="sortBy"
+            (change)="filterDestinations()"
+          >
+            <option value="rating">Mayor Calificación</option>
+            <option value="name">Alfabético (A-Z)</option>
+            <option value="country">Por País</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Collapsible Advanced Filters Drawer -->
+    <div *ngIf="showAdvancedFilters" class="advanced-filters-drawer mt-3 pt-3 border-top">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label for="country-filter" class="drawer-label"><i class="fas fa-flag me-1"></i>País:</label>
+          <select
+            id="country-filter"
+            class="form-select drawer-select"
+            [(ngModel)]="selectedCountry"
+            (change)="onCountryChange()"
+          >
+            <option value="">Todos los países</option>
+            <option *ngFor="let c of countries" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label for="region-filter" class="drawer-label"><i class="fas fa-map me-1"></i>Región / Estado:</label>
+          <input
+            id="region-filter"
+            type="text"
+            class="form-control drawer-input"
+            placeholder="Ej: Buenos Aires, Tokio, Cataluña..."
+            [(ngModel)]="selectedRegion"
+            (input)="onFilterChange()"
+          />
+        </div>
+
+        <div class="col-md-3">
+          <label for="pop-filter" class="drawer-label"><i class="fas fa-users me-1"></i>Población mínima:</label>
+          <select
+            id="pop-filter"
+            class="form-select drawer-select"
+            [(ngModel)]="minPopulation"
+            (change)="onFilterChange()"
+          >
+            <option [ngValue]="0">Cualquier población</option>
+            <option [ngValue]="50000">+50.000 hab.</option>
+            <option [ngValue]="200000">+200.000 hab.</option>
+            <option [ngValue]="1000000">+1.000.000 (Metrópolis)</option>
+          </select>
+        </div>
+
+        <div class="col-md-1 d-flex justify-content-end">
+          <button
+            class="btn btn-outline-danger btn-reset-filters w-100"
+            (click)="resetFilters()"
+            title="Limpiar filtros"
+            id="btn-reset-filters"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -92,7 +147,7 @@
         <div class="city-info">
           <strong>{{ city.name }}</strong>, {{ city.country }} <span *ngIf="city.region">({{ city.region }})</span>
         </div>
-        <button class="btn btn-sm btn-outline-primary"><i class="fas fa-plus"></i> Importar como Destino</button>
+        <button class="btn btn-sm btn-outline-primary"><i class="fas fa-compass"></i> Explorar Destino</button>
       </div>
     </div>
   </div>

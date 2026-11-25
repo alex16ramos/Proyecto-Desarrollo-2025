@@ -2,6 +2,7 @@ export interface DestinationRatingDto {
   id: string;
   userId: string;
   userName?: string;
+  userAvatarUrl?: string;
   destinationId: string;
   score: number;
   comment?: string;
@@ -16,7 +17,7 @@ export interface RateDestinationDto {
 
 export interface DestinationRatingSummaryDto {
   destinationId: string;
-  averageScore: number;
+  averageRating: number;
   totalRatings: number;
-  ratings: DestinationRatingDto[];
 }
+

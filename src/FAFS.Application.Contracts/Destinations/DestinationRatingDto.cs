@@ -6,6 +6,8 @@ namespace FAFS.Application.Contracts.Destinations
     public class DestinationRatingDto : EntityDto<Guid>
     {
         public Guid UserId { get; set; }
+        public string? UserName { get; set; }
+        public string? UserAvatarUrl { get; set; }
         public Guid DestinationId { get; set; }
         public int Score { get; set; }
         public string? Comment { get; set; }

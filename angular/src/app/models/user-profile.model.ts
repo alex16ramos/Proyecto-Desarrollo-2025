@@ -19,3 +19,17 @@ export interface UpdateUserPreferencesDto {
   avatarUrl?: string;
   preferredLanguage?: string;
 }
+
+export interface UpdateProfileBasicDto {
+  userName: string;
+  email: string;
+  name?: string;
+  surname?: string;
+  phoneNumber?: string;
+}
+
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
+}
+

@@ -199,11 +199,16 @@
           </div>
           <div *ngFor="let r of ratings" class="review-item">
             <div class="review-header">
-              <div class="user-avatar">
-                <i class="fas fa-user"></i>
-              </div>
+              <a [routerLink]="['/profile', r.userId]" class="user-avatar-link" title="Ver perfil público">
+                <div class="user-avatar">
+                  <img *ngIf="r.userAvatarUrl" [src]="r.userAvatarUrl" [alt]="r.userName" class="review-avatar-img" />
+                  <i *ngIf="!r.userAvatarUrl" class="fas fa-user"></i>
+                </div>
+              </a>
               <div class="user-info">
-                <span class="user-name">{{ r.userName || 'Viajero de FAFS' }}</span>
+                <a [routerLink]="['/profile', r.userId]" class="user-name-link">
+                  <span class="user-name">{{ r.userName || 'Viajero de FAFS' }}</span>
+                </a>
                 <span class="review-date">{{ r.creationTime | date:'mediumDate' }}</span>
               </div>
               <div class="review-stars">
@@ -242,7 +247,9 @@
             <span class="tip-text">{{ exp.comments }}</span>
           </div>
           <div class="exp-footer">
-            <span class="exp-author"><i class="fas fa-user-circle"></i> {{ exp.userName || 'Viajero' }}</span>
+            <a [routerLink]="['/profile', exp.userId]" class="exp-author-link text-decoration-none">
+              <span class="exp-author"><i class="fas fa-user-circle"></i> {{ exp.userName || 'Viajero' }}</span>
+            </a>
             <span class="exp-date">{{ exp.dateExperienced | date:'mediumDate' }}</span>
           </div>
         </div>
@@ -254,35 +261,38 @@
   <div *ngIf="showExperienceModal" class="modal-backdrop" (click)="closeExperienceModal()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2 class="modal-title">Compartir Experiencia de Viaje</h2>
-        <button class="close-btn" (click)="closeExperienceModal()">&times;</button>
+        <div class="modal-header-content">
+          <h2 class="modal-title"><i class="fas fa-pen-fancy text-primary me-2"></i>Compartir Experiencia de Viaje</h2>
+          <p class="modal-subtitle">Cuéntale a la comunidad tus vivencias y recomendaciones en {{ destination.name }}</p>
+        </div>
+        <button class="close-btn" (click)="closeExperienceModal()" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
         <div class="form-group mb-3">
-          <label for="exp-title" class="form-label">Título de la Experiencia *</label>
+          <label for="exp-title" class="form-label">Título de la Experiencia <span class="required">*</span></label>
           <input
             id="exp-title"
             type="text"
             class="form-control"
-            placeholder="Ej: Caminata hacia el mirador"
+            placeholder="Ej: Caminata hacia el mirador al atardecer"
             [(ngModel)]="newExperience.title"
             required
           />
         </div>
         <div class="form-group mb-3">
-          <label for="exp-desc" class="form-label">Relato o Descripción *</label>
+          <label for="exp-desc" class="form-label">Relato o Descripción <span class="required">*</span></label>
           <textarea
             id="exp-desc"
             class="form-control"
-            rows="3"
-            placeholder="Cuenta tu experiencia y qué fue lo más destacado..."
+            rows="4"
+            placeholder="Cuenta tu experiencia, qué fue lo más destacado, precios, rutas..."
             [(ngModel)]="newExperience.description"
             required
           ></textarea>
         </div>
-        <div class="row mb-3">
+        <div class="row mb-3 g-3">
           <div class="col-md-6">
-            <label for="exp-date" class="form-label">Fecha de la Visita *</label>
+            <label for="exp-date" class="form-label">Fecha de la Visita <span class="required">*</span></label>
             <input
               id="exp-date"
               type="date"
@@ -292,30 +302,37 @@
             />
           </div>
           <div class="col-md-6">
-            <label for="exp-rating" class="form-label">Calificación (1 a 5) *</label>
+            <label for="exp-rating" class="form-label">Calificación (1 a 5) <span class="required">*</span></label>
             <select id="exp-rating" class="form-select" [(ngModel)]="newExperience.rating">
-              <option [ngValue]="5">5 - Excelente</option>
-              <option [ngValue]="4">4 - Muy Bueno</option>
-              <option [ngValue]="3">3 - Bueno</option>
-              <option [ngValue]="2">2 - Regular</option>
-              <option [ngValue]="1">1 - Malo</option>
+              <option [ngValue]="5">⭐ 5 - Excelente</option>
+              <option [ngValue]="4">⭐ 4 - Muy Bueno</option>
+              <option [ngValue]="3">⭐ 3 - Bueno</option>
+              <option [ngValue]="2">⭐ 2 - Regular</option>
+              <option [ngValue]="1">⭐ 1 - Malo</option>
             </select>
           </div>
         </div>
-        <div class="form-group mb-3">
-          <label for="exp-comments" class="form-label">Consejos o Recomendaciones</label>
+        <div class="form-group mb-2">
+          <label for="exp-comments" class="form-label">Consejos o Recomendaciones útiles</label>
           <input
             id="exp-comments"
             type="text"
             class="form-control"
-            placeholder="Ej: Llevar protector solar y calzado cómodo"
+            placeholder="Ej: Llevar protector solar, efectivo y calzado cómodo"
             [(ngModel)]="newExperience.comments"
           />
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeExperienceModal()">Cancelar</button>
-        <button class="btn btn-primary" (click)="saveExperience()" id="btn-save-experience">Publicar Experiencia</button>
+        <button class="btn btn-outline-secondary cancel-btn" (click)="closeExperienceModal()">Cancelar</button>
+        <button
+          class="btn btn-primary submit-btn"
+          (click)="saveExperience()"
+          id="btn-save-experience"
+          [disabled]="!newExperience.title || !newExperience.description"
+        >
+          <i class="fas fa-paper-plane me-1"></i> Publicar Experiencia
+        </button>
       </div>
     </div>
   </div>

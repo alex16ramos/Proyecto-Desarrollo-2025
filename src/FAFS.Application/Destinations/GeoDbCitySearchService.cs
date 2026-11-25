@@ -50,6 +50,11 @@ namespace FAFS.Destinations
                 url += $"&countryIds={Uri.EscapeDataString(request.CountryCode.Trim())}";
             }
 
+            if (request.MinPopulation.HasValue && request.MinPopulation.Value > 0)
+            {
+                url += $"&minPopulation={request.MinPopulation.Value}";
+            }
+
             const int maxRetries = 3;
             HttpResponseMessage? response = null;
 
@@ -79,19 +84,26 @@ namespace FAFS.Destinations
                         }
                     }
 
-                    if (!response.IsSuccessStatusCode)
+                    if (response.IsSuccessStatusCode)
                     {
-                        var errorContent = await response.Content.ReadAsStringAsync();
-                        _logger?.LogError("Error al consultar GeoDB. Status: {StatusCode}, Body: {Body}", (int)response.StatusCode, errorContent);
+                        break;
                     }
 
-                    response.EnsureSuccessStatusCode();
-                    break;
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger?.LogWarning("GeoDB devolvió status {StatusCode}. Body: {Body}", (int)response.StatusCode, errorContent);
+
+                    if (attempt < maxRetries)
+                    {
+                        await Task.Delay(1200);
+                    }
                 }
-                catch (HttpRequestException ex) when (attempt < maxRetries)
+                catch (HttpRequestException ex)
                 {
-                    _logger?.LogWarning(ex, "Fallo de conexión con GeoDB en intento {Attempt}. Reintentando...", attempt);
-                    await Task.Delay(1200);
+                    _logger?.LogWarning(ex, "Fallo de conexión o red con GeoDB en intento {Attempt}/{MaxRetries}.", attempt, maxRetries);
+                    if (attempt < maxRetries)
+                    {
+                        await Task.Delay(1200);
+                    }
                 }
             }
 
@@ -111,12 +123,20 @@ namespace FAFS.Destinations
                 {
                     foreach (var item in data.EnumerateArray())
                     {
+                        var region = item.TryGetProperty("region", out var r) ? r.GetString() : null;
+
+                        if (!string.IsNullOrWhiteSpace(request.Region) &&
+                            (region == null || !region.Contains(request.Region.Trim(), StringComparison.OrdinalIgnoreCase)))
+                        {
+                            continue;
+                        }
+
                         result.Cities.Add(new CityDto
                         {
                             Name = item.GetProperty("name").GetString() ?? string.Empty,
                             Country = item.GetProperty("country").GetString() ?? string.Empty,
                             CountryCode = item.GetProperty("countryCode").GetString() ?? string.Empty,
-                            Region = item.TryGetProperty("region", out var r) ? r.GetString() : null,
+                            Region = region,
                             Latitude = item.TryGetProperty("latitude", out var lat) ? lat.ToString() : null,
                             Longitude = item.TryGetProperty("longitude", out var lon) ? lon.ToString() : null
                         });

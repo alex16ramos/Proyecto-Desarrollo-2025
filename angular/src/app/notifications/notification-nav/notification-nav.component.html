@@ -1,0 +1,83 @@
+<div class="top-nav-actions" *ngIf="isAuthenticated">
+  <!-- Botón de Notificaciones Moderno -->
+  <div class="notification-nav-container">
+    <button
+      class="bell-btn"
+      (click)="toggleDropdown($event)"
+      [attr.aria-expanded]="isOpen"
+      title="Notificaciones"
+      id="nav-notification-bell"
+    >
+      <i class="fas fa-bell bell-icon"></i>
+      <span *ngIf="unreadCount > 0" class="unread-badge" id="nav-notification-badge">
+        {{ unreadCount > 99 ? '99+' : unreadCount }}
+      </span>
+    </button>
+
+  <!-- Dropdown Menu -->
+  <div *ngIf="isOpen" class="notification-dropdown" (click)="$event.stopPropagation()">
+    <div class="dropdown-header">
+      <div class="header-left">
+        <h5 class="dropdown-title">Notificaciones</h5>
+        <span class="unread-indicator" *ngIf="unreadCount > 0">{{ unreadCount }} nueva(s)</span>
+      </div>
+      <button
+        *ngIf="notifications.length > 0 && unreadCount > 0"
+        class="mark-all-btn"
+        (click)="markAllAsRead($event)"
+        title="Marcar todas como leídas"
+      >
+        <i class="fas fa-check-double"></i> Leer todas
+      </button>
+    </div>
+
+    <div class="dropdown-body">
+      <div *ngIf="isLoading" class="loading-state">
+        <span class="spinner-border spinner-border-sm text-primary"></span>
+        <span>Cargando notificaciones...</span>
+      </div>
+
+      <div *ngIf="!isLoading && notifications.length === 0" class="empty-state">
+        <i class="far fa-bell-slash empty-icon"></i>
+        <p>No tienes notificaciones por el momento.</p>
+      </div>
+
+      <div *ngIf="!isLoading && notifications.length > 0" class="notifications-list">
+        <div
+          *ngFor="let n of notifications"
+          class="notification-item"
+          [class.unread]="!n.isRead"
+          (click)="markAsRead($event, n)"
+        >
+          <div class="item-icon-wrap" [class.event-type]="n.type === 'UpcomingEvent'">
+            <i class="fas" [ngClass]="n.type === 'UpcomingEvent' ? 'fa-calendar-alt text-warning' : (n.type === 'Favorite' ? 'fa-heart text-danger' : 'fa-info-circle icon-info')"></i>
+          </div>
+          <div class="item-content">
+            <div class="item-title">{{ n.title }}</div>
+            <div class="item-message">{{ n.message }}</div>
+            <div class="item-time">{{ n.creationTime | date:'short' }}</div>
+          </div>
+          <span *ngIf="!n.isRead" class="unread-dot" title="No leída"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dropdown-footer">
+      <button class="view-all-btn" (click)="goToAllNotifications()">
+        Ver todas las notificaciones <i class="fas fa-arrow-right ms-1"></i>
+      </button>
+    </div>
+  </div>
+  </div>
+
+  <!-- Botón de Cerrar Sesión Elegante -->
+  <button
+    class="logout-nav-btn"
+    (click)="onLogout()"
+    title="Cerrar sesión"
+    id="nav-logout-btn"
+  >
+    <i class="fas fa-sign-out-alt logout-icon"></i>
+    <span class="logout-label">Cerrar Sesión</span>
+  </button>
+</div>

@@ -1,39 +1,118 @@
-/* You can add global styles to this file, and also import other style files */
-
+/* Global application styles and modern design tokens */
 
 :root {
+  --font-primary: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Outfit', var(--font-primary);
+
   --lpx-theme-light-bg: url('/assets/images/login/login-bg-img-light.svg');
   --lpx-theme-dim-bg: url('/assets/images/login/login-bg-img-dim.svg');
   --lpx-theme-dark-bg: url('/assets/images/login/login-bg-img-dark.svg');
 
   --lpx-logo-url: var(--lpx-logo-icon, url('/assets/images/logo/icon.svg'));
   --lpx-logo: var(--lpx-logo-icon)!important;
+}
 
-  .abp-logo {
-    background-repeat: no-repeat;
-  }
+body {
+  font-family: var(--font-primary) !important;
+  color: #1e293b;
+  background-color: #f8fafc;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-  .abp-support {
-    width: 178px;
-    height: 30px;
-    background-image: url('/assets/images/getting-started/abp-support.svg');
-  }
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display) !important;
+  letter-spacing: -0.02em;
+}
 
-  .abp-community {
-    width: 215px;
-    height: 30px;
-    background-image: url('/assets/images/getting-started/abp-community.svg');
-  }
+/* Custom refined scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
 
-  .abp-blog {
-    width: 142px;
-    height: 30px;
-    background-image: url('/assets/images/getting-started/abp-blog.svg');
-  }
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
 
-  .logo-x {
-    width: 20px;
-    height: 20px;
-    background-image: url('/assets/images/getting-started/x.svg');
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Base button refinements */
+.btn {
+  font-family: var(--font-primary);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
   }
 }
+
+/* User profile button & logout styling in navbar */
+.lpx-user-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(241, 245, 249, 0.7);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #ffffff;
+    border-color: rgba(37, 99, 235, 0.3);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  }
+
+  .user-full-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #1e293b;
+  }
+}
+
+/* User dropdown logout action item */
+.dropdown-menu {
+  border-radius: 14px !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  box-shadow: 0 16px 36px -8px rgba(15, 23, 42, 0.15) !important;
+  padding: 0.5rem !important;
+
+  .dropdown-item {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.55rem 0.85rem;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+
+    &:last-child {
+      color: #dc2626;
+
+      &:hover {
+        background-color: #fef2f2;
+        color: #b91c1c;
+      }
+    }
+  }
+}
+

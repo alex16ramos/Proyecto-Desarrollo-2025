@@ -12,5 +12,6 @@ namespace FAFS.Application.Contracts.Notifications
         Task MarkAsReadAsync(Guid id);
         Task MarkAllAsReadAsync();
         Task<NotificationDto> SendNotificationAsync(CreateNotificationDto input);
+        Task CheckUpcomingEventsForFavoritesAsync();
     }
 }

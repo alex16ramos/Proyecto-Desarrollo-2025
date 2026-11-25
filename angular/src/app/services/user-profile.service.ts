@@ -1,7 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { RestService } from '@abp/ng.core';
 import { Observable } from 'rxjs';
-import { PublicUserProfileDto, UpdateUserPreferencesDto } from '../models/user-profile.model';
+import {
+  PublicUserProfileDto,
+  UpdateUserPreferencesDto,
+  UpdateProfileBasicDto,
+  ChangePasswordDto,
+} from '../models/user-profile.model';
 
 @Injectable({
   providedIn: 'root',
@@ -24,10 +29,26 @@ export class UserProfileService {
     }, { apiName: this.apiName });
   }
 
+  updateBasicProfile(input: UpdateProfileBasicDto): Observable<any> {
+    return this.rest.request<UpdateProfileBasicDto, any>({
+      method: 'PUT',
+      url: '/api/account/my-profile',
+      body: input,
+    }, { apiName: this.apiName });
+  }
+
   updatePreferences(input: UpdateUserPreferencesDto): Observable<void> {
     return this.rest.request<UpdateUserPreferencesDto, void>({
       method: 'PUT',
       url: '/api/app/user-profile/preferences',
+      body: input,
+    }, { apiName: this.apiName });
+  }
+
+  changePassword(input: ChangePasswordDto): Observable<void> {
+    return this.rest.request<ChangePasswordDto, void>({
+      method: 'POST',
+      url: '/api/account/my-profile/change-password',
       body: input,
     }, { apiName: this.apiName });
   }
@@ -39,3 +60,4 @@ export class UserProfileService {
     }, { apiName: this.apiName });
   }
 }
+

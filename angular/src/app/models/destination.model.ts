@@ -32,6 +32,14 @@ export interface CityDto {
   longitude?: string;
 }
 
+export interface CitySearchRequestDto {
+  partialName: string;
+  limit?: number;
+  countryCode?: string;
+  region?: string;
+  minPopulation?: number;
+}
+
 export interface CitySearchResultDto {
   cities: CityDto[];
 }

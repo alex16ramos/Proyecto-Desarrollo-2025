@@ -39,7 +39,7 @@
       [id]="'notif-card-' + item.id"
     >
       <div class="notif-icon-wrap" [class.unread]="!item.isRead">
-        <i class="fas fa-bell"></i>
+        <i class="fas" [ngClass]="item.type === 'UpcomingEvent' ? 'fa-calendar-alt text-warning' : (item.type === 'Favorite' ? 'fa-heart text-danger' : 'fa-bell')"></i>
       </div>
       <div class="notif-content">
         <div class="notif-header">

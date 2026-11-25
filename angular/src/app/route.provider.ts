@@ -1,27 +1,34 @@
 import { RoutesService, eLayoutType } from '@abp/ng.core';
+import { NavItemsService } from '@abp/ng.theme.shared';
 import { inject, provideAppInitializer } from '@angular/core';
+import { NotificationNavComponent } from './notifications/notification-nav/notification-nav.component';
 
 export const APP_ROUTE_PROVIDER = [
   provideAppInitializer(() => {
     configureRoutes();
+    configureNavItems();
   }),
 ];
+
+function configureNavItems() {
+  const navItems = inject(NavItemsService);
+  navItems.addItems([
+    {
+      id: 'NotificationNav',
+      order: 1,
+      component: NotificationNavComponent,
+    },
+  ]);
+}
 
 function configureRoutes() {
   const routes = inject(RoutesService);
   routes.add([
     {
-      path: '/',
-      name: '::Menu:Home',
-      iconClass: 'fas fa-home',
-      order: 1,
-      layout: eLayoutType.application,
-    },
-    {
       path: '/destinations',
       name: 'Destinos',
       iconClass: 'fas fa-map-marked-alt',
-      order: 2,
+      order: 1,
       layout: eLayoutType.application,
     },
     {

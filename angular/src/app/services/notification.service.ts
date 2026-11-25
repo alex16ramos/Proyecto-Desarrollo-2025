@@ -63,6 +63,13 @@ export class NotificationService {
     );
   }
 
+  checkUpcomingEventsForFavorites(): Observable<void> {
+    return this.rest.request<unknown, void>({
+      method: 'POST',
+      url: '/api/app/notification/check-upcoming-events-for-favorites',
+    }, { apiName: this.apiName });
+  }
+
   sendNotification(input: CreateNotificationDto): Observable<AppNotificationDto> {
     return this.rest.request<CreateNotificationDto, AppNotificationDto>({
       method: 'POST',

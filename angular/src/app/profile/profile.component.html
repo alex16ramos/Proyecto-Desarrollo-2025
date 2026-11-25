@@ -4,22 +4,48 @@
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Cargando...</span>
     </div>
-    <p>Cargando perfil...</p>
+    <p>Cargando información del perfil...</p>
   </div>
 
   <div *ngIf="!isLoading && profile" class="profile-content">
-    <!-- Header / Banner -->
+    <!-- Feedback Alerts -->
+    <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show modern-alert" role="alert">
+      <i class="fas fa-check-circle me-2"></i> {{ successMessage }}
+    </div>
+    <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show modern-alert" role="alert">
+      <i class="fas fa-exclamation-circle me-2"></i> {{ errorMessage }}
+    </div>
+
+    <!-- Header / Banner Card con Glassmorphism -->
     <div class="profile-header-card">
       <div class="profile-avatar-wrap">
         <img
-          [src]="profile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'"
+          [src]="profile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'"
           [alt]="profile.userName"
           class="profile-avatar"
         />
+        <div class="avatar-badge" *ngIf="isOwnProfile" title="Tu perfil activo">
+          <i class="fas fa-check"></i>
+        </div>
       </div>
       <div class="profile-header-info">
-        <h1 class="profile-name">{{ profile.name ? (profile.name + ' ' + (profile.surname || '')) : profile.userName }}</h1>
-        <span class="profile-username">&#64;{{ profile.userName }}</span>
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <h1 class="profile-name">
+              {{ (profile.name || profile.surname) ? (profile.name + ' ' + (profile.surname || '')).trim() : profile.userName }}
+            </h1>
+            <span class="profile-username">&#64;{{ profile.userName }}</span>
+            <span class="profile-email ms-3" *ngIf="profile.email"><i class="far fa-envelope me-1"></i>{{ profile.email }}</span>
+          </div>
+
+          <!-- Action for Own Profile: Change Password Trigger -->
+          <div *ngIf="isOwnProfile" class="header-actions">
+            <button class="btn btn-outline-secondary btn-sm pwd-btn" (click)="openPasswordModal()" id="btn-open-pwd-modal">
+              <i class="fas fa-key me-1"></i> Cambiar Contraseña
+            </button>
+          </div>
+        </div>
+
         <p class="profile-bio" *ngIf="profile.bio">{{ profile.bio }}</p>
 
         <div class="profile-stats">
@@ -31,52 +57,98 @@
             <span class="stat-value">{{ profile.favoritesCount }}</span>
             <span class="stat-label">Favoritos</span>
           </div>
+          <div class="stat-item" *ngIf="profile.preferredLanguage">
+            <span class="stat-value text-uppercase">{{ profile.preferredLanguage }}</span>
+            <span class="stat-label">Idioma</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Edit Profile Settings (Only for Own Profile) -->
+    <!-- Edit Profile Section (Only for Own Profile) -->
     <div *ngIf="isOwnProfile" class="settings-card mt-4">
-      <h2 class="section-title"><i class="fas fa-user-cog me-2"></i>Preferencias y Personalización</h2>
+      <div class="settings-header">
+        <h2 class="section-title"><i class="fas fa-user-edit text-primary me-2"></i>Editar Información Personal & Preferencias</h2>
+        <p class="section-subtitle">Actualiza tu nombre, email de contacto, foto de avatar y biografía de viajero.</p>
+      </div>
+
       <div class="row g-3">
+        <!-- Basic Info -->
         <div class="col-md-6">
-          <label for="prof-avatar" class="form-label">URL de Foto de Perfil</label>
+          <label for="prof-name" class="form-label">Nombre</label>
           <input
-            id="prof-avatar"
-            type="url"
+            id="prof-name"
+            type="text"
             class="form-control"
-            placeholder="https://..."
-            [(ngModel)]="preferences.avatarUrl"
+            placeholder="Tu nombre"
+            [(ngModel)]="basicInfo.name"
           />
         </div>
         <div class="col-md-6">
-          <label for="prof-lang" class="form-label">Idioma Preferido</label>
+          <label for="prof-surname" class="form-label">Apellido</label>
+          <input
+            id="prof-surname"
+            type="text"
+            class="form-control"
+            placeholder="Tu apellido"
+            [(ngModel)]="basicInfo.surname"
+          />
+        </div>
+        <div class="col-md-6">
+          <label for="prof-email" class="form-label">Correo Electrónico *</label>
+          <input
+            id="prof-email"
+            type="email"
+            class="form-control"
+            placeholder="correo@ejemplo.com"
+            [(ngModel)]="basicInfo.email"
+            required
+          />
+        </div>
+        <div class="col-md-6">
+          <label for="prof-lang" class="form-label">Idioma de la Plataforma</label>
           <select id="prof-lang" class="form-select" [(ngModel)]="preferences.preferredLanguage">
-            <option value="es">Español</option>
-            <option value="en">Inglés</option>
-            <option value="pt">Portugués</option>
+            <option value="es">Español (ES)</option>
+            <option value="en">Inglés (EN)</option>
+            <option value="pt">Portugués (PT)</option>
           </select>
         </div>
+
+        <!-- Preferences & Media -->
+        <div class="col-12">
+          <label for="prof-avatar" class="form-label">URL de Foto de Perfil (Avatar)</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-image text-muted"></i></span>
+            <input
+              id="prof-avatar"
+              type="url"
+              class="form-control"
+              placeholder="https://images.unsplash.com/..."
+              [(ngModel)]="preferences.avatarUrl"
+            />
+          </div>
+        </div>
+
         <div class="col-12">
           <label for="prof-bio" class="form-label">Biografía / Acerca de mí</label>
           <textarea
             id="prof-bio"
             class="form-control"
             rows="3"
-            placeholder="Comparte tus intereses y qué tipo de viajero eres..."
+            placeholder="Comparte tus gustos de viaje, destinos soñados o anécdotas con la comunidad..."
             [(ngModel)]="preferences.bio"
           ></textarea>
         </div>
       </div>
 
-      <div class="d-flex justify-content-between align-items-center mt-4">
+      <div class="settings-footer mt-4">
         <button
           class="btn btn-primary save-btn"
-          (click)="savePreferences()"
+          (click)="saveBasicAndPreferences()"
           [disabled]="isSaving"
-          id="btn-save-preferences"
+          id="btn-save-profile"
         >
-          <i class="fas fa-save"></i> {{ isSaving ? 'Guardando...' : 'Guardar Preferencias' }}
+          <i class="fas fa-save me-1"></i> {{ isSaving ? 'Guardando Cambios...' : 'Guardar Datos de Perfil' }}
         </button>
 
         <button
@@ -84,28 +156,113 @@
           (click)="deleteAccount()"
           id="btn-delete-account"
         >
-          <i class="fas fa-trash-alt"></i> Eliminar mi cuenta
+          <i class="fas fa-trash-alt me-1"></i> Eliminar Cuenta Permanentemente
         </button>
       </div>
     </div>
 
-    <!-- User Recent Experiences -->
+    <!-- User Published Experiences -->
     <div class="recent-experiences mt-4">
-      <h2 class="section-title"><i class="fas fa-compass me-2"></i>Experiencias Publicadas</h2>
-      <div *ngIf="profile.recentExperiences.length === 0" class="no-exp-box">
-        <p class="text-muted">No hay bitácoras de viaje compartidas recientemente.</p>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="section-title mb-0">
+          <i class="fas fa-compass text-success me-2"></i>Bitácoras y Experiencias
+        </h2>
+        <span class="badge bg-light text-secondary border">{{ profile.recentExperiences.length }} publicadas</span>
       </div>
+
+      <div *ngIf="profile.recentExperiences.length === 0" class="no-exp-box">
+        <i class="fas fa-feather empty-icon"></i>
+        <p class="text-muted">Este usuario aún no ha publicado bitácoras de viaje.</p>
+      </div>
+
       <div *ngIf="profile.recentExperiences.length > 0" class="experiences-grid">
         <div *ngFor="let exp of profile.recentExperiences" class="experience-card">
           <div class="exp-top">
-            <span class="dest-badge">{{ exp.destinationName || 'Destino' }}</span>
+            <span class="dest-badge">
+              <i class="fas fa-map-marker-alt"></i> {{ exp.destinationName || 'Destino' }}
+            </span>
             <span class="exp-rating">★ {{ exp.rating }}/5</span>
           </div>
           <h4 class="exp-title">{{ exp.title }}</h4>
           <p class="exp-desc">{{ exp.description }}</p>
-          <span class="exp-date text-muted">{{ exp.dateExperienced | date:'mediumDate' }}</span>
+          <div class="exp-tips" *ngIf="exp.comments">
+            <i class="fas fa-lightbulb text-warning me-1"></i>
+            <small>{{ exp.comments }}</small>
+          </div>
+          <div class="exp-footer-row mt-2 pt-2 border-top">
+            <span class="exp-date text-muted"><i class="far fa-calendar-alt me-1"></i>{{ exp.dateExperienced | date:'mediumDate' }}</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Change Password Modal -->
+  <div *ngIf="showPasswordModal" class="modal-backdrop" (click)="closePasswordModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title"><i class="fas fa-shield-alt text-primary me-2"></i>Cambiar Contraseña</h2>
+          <p class="modal-subtitle">Actualiza tu clave de acceso para proteger tu cuenta de FAFS.</p>
+        </div>
+        <button class="close-btn" (click)="closePasswordModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="pwdSuccessMessage" class="alert alert-success py-2 mb-3">
+          <i class="fas fa-check-circle me-1"></i> {{ pwdSuccessMessage }}
+        </div>
+        <div *ngIf="pwdErrorMessage" class="alert alert-danger py-2 mb-3">
+          <i class="fas fa-exclamation-triangle me-1"></i> {{ pwdErrorMessage }}
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="pwd-curr" class="form-label">Contraseña Actual *</label>
+          <input
+            id="pwd-curr"
+            type="password"
+            class="form-control"
+            placeholder="••••••••"
+            [(ngModel)]="passwordForm.currentPassword"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="pwd-new" class="form-label">Nueva Contraseña *</label>
+          <input
+            id="pwd-new"
+            type="password"
+            class="form-control"
+            placeholder="Al menos 6 caracteres..."
+            [(ngModel)]="passwordForm.newPassword"
+            autocomplete="new-password"
+          />
+        </div>
+
+        <div class="form-group mb-2">
+          <label for="pwd-conf" class="form-label">Confirmar Nueva Contraseña *</label>
+          <input
+            id="pwd-conf"
+            type="password"
+            class="form-control"
+            placeholder="Repite la nueva clave..."
+            [(ngModel)]="confirmPassword"
+            autocomplete="new-password"
+          />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary cancel-btn" (click)="closePasswordModal()">Cancelar</button>
+        <button
+          class="btn btn-primary submit-btn"
+          (click)="submitChangePassword()"
+          [disabled]="isChangingPassword || !passwordForm.currentPassword || !passwordForm.newPassword"
+          id="btn-submit-change-password"
+        >
+          <i class="fas fa-lock me-1"></i> {{ isChangingPassword ? 'Modificando...' : 'Actualizar Contraseña' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
+

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { RestService, PagedResultDto, PagedAndSortedResultRequestDto } from '@abp/ng.core';
 import { Observable } from 'rxjs';
-import { DestinationDto, CreateUpdateDestinationDto, CitySearchResultDto, DestinationEventDto } from '../models/destination.model';
+import { DestinationDto, CreateUpdateDestinationDto, CitySearchResultDto, CitySearchRequestDto, DestinationEventDto } from '../models/destination.model';
 
 @Injectable({
   providedIn: 'root',
@@ -52,11 +52,20 @@ export class DestinationService {
     }, { apiName: this.apiName });
   }
 
-  searchCities(prefix: string): Observable<CitySearchResultDto> {
-    return this.rest.request<unknown, CitySearchResultDto>({
-      method: 'GET',
+  searchCities(
+    prefix: string,
+    filters?: { countryCode?: string; region?: string; minPopulation?: number }
+  ): Observable<CitySearchResultDto> {
+    return this.rest.request<CitySearchRequestDto, CitySearchResultDto>({
+      method: 'POST',
       url: '/api/app/destination/search-cities',
-      params: { PartialName: prefix },
+      body: {
+        partialName: prefix,
+        limit: 10,
+        countryCode: filters?.countryCode,
+        region: filters?.region,
+        minPopulation: filters?.minPopulation,
+      },
     }, { apiName: this.apiName });
   }
 
@@ -71,8 +80,7 @@ export class DestinationService {
   getEvents(destinationId: string): Observable<DestinationEventDto[]> {
     return this.rest.request<unknown, DestinationEventDto[]>({
       method: 'GET',
-      url: `/api/app/destination/events`,
-      params: { destinationId },
+      url: `/api/app/destination/events/${destinationId}`,
     }, { apiName: this.apiName });
   }
 

@@ -6,8 +6,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Application.Services;
 using Volo.Abp.Authorization;
+using Volo.Abp.Data;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Domain.Repositories;
+using Volo.Abp.Identity;
 using Volo.Abp.Users;
 
 namespace FAFS.Destinations
@@ -15,13 +17,16 @@ namespace FAFS.Destinations
     public class DestinationRatingAppService : ApplicationService, IDestinationRatingAppService
     {
         private readonly IRepository<DestinationRating, Guid> _ratingRepository;
+        private readonly IIdentityUserRepository? _userRepository;
 
         public DestinationRatingAppService(
             IRepository<DestinationRating, Guid> ratingRepository,
-            IAbpLazyServiceProvider lazyServiceProvider)
+            IAbpLazyServiceProvider lazyServiceProvider,
+            IIdentityUserRepository? userRepository = null)
         {
             _ratingRepository = ratingRepository;
             LazyServiceProvider = lazyServiceProvider;
+            _userRepository = userRepository;
         }
 
         [Authorize]
@@ -98,7 +103,12 @@ namespace FAFS.Destinations
             var userId = CurrentUser.GetId();
             var rating = (await _ratingRepository.GetListAsync(r => r.DestinationId == destinationId && r.UserId == userId)).FirstOrDefault();
 
-            return rating != null ? ObjectMapper.Map<DestinationRating, DestinationRatingDto>(rating) : null;
+            if (rating == null)
+                return null;
+
+            var dto = ObjectMapper.Map<DestinationRating, DestinationRatingDto>(rating);
+            await EnrichRatingDtoAsync(dto);
+            return dto;
         }
 
         public async Task<DestinationRatingSummaryDto> GetDestinationRatingSummaryAsync(Guid destinationId)
@@ -125,7 +135,30 @@ namespace FAFS.Destinations
         public async Task<List<DestinationRatingDto>> GetRatingsForDestinationAsync(Guid destinationId)
         {
             var ratings = await _ratingRepository.GetListAsync(r => r.DestinationId == destinationId);
-            return ObjectMapper.Map<List<DestinationRating>, List<DestinationRatingDto>>(ratings);
+            var dtos = ObjectMapper.Map<List<DestinationRating>, List<DestinationRatingDto>>(
+                ratings.OrderByDescending(r => r.CreationTime).ToList()
+            );
+
+            foreach (var dto in dtos)
+            {
+                await EnrichRatingDtoAsync(dto);
+            }
+
+            return dtos;
+        }
+
+        private async Task EnrichRatingDtoAsync(DestinationRatingDto dto)
+        {
+            if (_userRepository != null && dto.UserId != Guid.Empty)
+            {
+                var user = await _userRepository.FindAsync(dto.UserId);
+                if (user != null)
+                {
+                    dto.UserName = !string.IsNullOrWhiteSpace(user.Name) ? $"{user.Name} {user.Surname}".Trim() : user.UserName;
+                    dto.UserAvatarUrl = user.GetProperty<string?>("AvatarUrl");
+                }
+            }
         }
     }
 }
+
